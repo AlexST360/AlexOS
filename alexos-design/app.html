@@ -597,7 +597,7 @@
           <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
           <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:16px;">
             <div>
-              <p class="label-upper" style="margin-bottom:6px;">Resumen · Abril 2025</p>
+              <p class="label-upper" id="wealth-hero-period" style="margin-bottom:6px;">Resumen · —</p>
               <h1 class="font-serif" style="font-size:var(--text-4xl);font-weight:300;letter-spacing:-0.02em;line-height:1.05;">
                 Wealth<span class="text-gold-gradient">OS</span>
               </h1>
@@ -606,169 +606,98 @@
             <div style="text-align:right;">
               <p class="label-upper" style="margin-bottom:4px;">Patrimonio total</p>
               <p class="font-serif" id="wealth-total" style="font-size:var(--text-4xl);font-weight:300;color:var(--gold);">$0</p>
-              <span class="kpi-change up">↑ activos registrados</span>
+              <p id="wealth-asset-count" style="font-size:var(--text-xs);color:var(--text-4);margin-top:4px;">0 activos registrados</p>
             </div>
           </div>
         </div>
 
         <!-- 4 KPI Cards -->
         <div class="g4">
-          <div class="card card-interactive card-in d1" id="kpi-investments">
-            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Inversiones</div>
-            <div class="kpi-value" style="font-size:var(--text-3xl);color:var(--emerald-2);margin-bottom:6px;" id="wealth-investments">$0</div>
-            <div class="sparkline" style="margin-bottom:var(--sp-2);">
-              <div class="spark-bar" style="height:40%;background:rgba(26,92,69,0.25);"></div>
-              <div class="spark-bar" style="height:55%;background:rgba(26,92,69,0.30);"></div>
-              <div class="spark-bar" style="height:48%;background:rgba(26,92,69,0.30);"></div>
-              <div class="spark-bar" style="height:70%;background:rgba(26,92,69,0.35);"></div>
-              <div class="spark-bar" style="height:65%;background:rgba(26,92,69,0.35);"></div>
-              <div class="spark-bar" style="height:80%;background:rgba(26,92,69,0.40);"></div>
-              <div class="spark-bar" style="height:90%;background:linear-gradient(180deg,var(--emerald-3),var(--emerald-2));"></div>
-            </div>
-            <span class="kpi-change up">↑ Total activos</span>
-          </div>
-          <div class="card card-interactive card-in d2" style="position:relative;">
+          <div class="card card-interactive card-in d1" style="position:relative;">
             <div class="kpi-label" style="margin-bottom:var(--sp-2);">Ingresos / mes</div>
-            <div class="kpi-value" id="wealth-income" style="font-size:var(--text-3xl);margin-bottom:6px;">$0</div>
-            <div class="sparkline" style="margin-bottom:var(--sp-2);">
-              <div class="spark-bar" style="height:50%;background:rgba(200,168,75,0.22);"></div>
-              <div class="spark-bar" style="height:55%;background:rgba(200,168,75,0.25);"></div>
-              <div class="spark-bar" style="height:60%;background:rgba(200,168,75,0.28);"></div>
-              <div class="spark-bar" style="height:68%;background:rgba(200,168,75,0.32);"></div>
-              <div class="spark-bar" style="height:75%;background:rgba(200,168,75,0.36);"></div>
-              <div class="spark-bar" style="height:82%;background:rgba(200,168,75,0.40);"></div>
-              <div class="spark-bar" style="height:95%;background:linear-gradient(180deg,var(--gold-2),var(--gold));"></div>
+            <div class="kpi-value" id="wealth-income" style="font-size:var(--text-3xl);color:var(--emerald-2);margin-bottom:8px;">$0</div>
+            <div class="prog-track" style="margin-bottom:var(--sp-2);height:4px;">
+              <div class="prog-fill prog-emerald" style="width:100%;"></div>
             </div>
+            <span class="kpi-change up" style="font-size:10px;">↑ Flujo de entrada</span>
             <button id="edit-monthly-income" class="btn-kc" style="position:absolute;top:var(--sp-3);right:var(--sp-3);" title="Editar">✎</button>
           </div>
-          <div class="card card-interactive card-in d3" style="position:relative;">
-            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Tasa de ahorro</div>
-            <div class="kpi-value" id="wealth-savings" style="font-size:var(--text-3xl);color:var(--sunset);margin-bottom:6px;">0%</div>
-            <div class="prog-track" style="margin-bottom:var(--sp-2);height:6px;">
-              <div class="prog-fill prog-sunset" style="width:0%;"></div>
-            </div>
-            <button id="edit-savings-rate" class="btn-kc" style="position:absolute;top:var(--sp-3);right:var(--sp-3);" title="Editar">✎</button>
-          </div>
-          <div class="card card-interactive card-in d4" style="position:relative;">
+
+          <div class="card card-interactive card-in d2" style="position:relative;">
             <div class="kpi-label" style="margin-bottom:var(--sp-2);">Gastos / mes</div>
-            <div class="kpi-value" id="wealth-expense" style="font-size:var(--text-3xl);margin-bottom:6px;">$0</div>
-            <div class="prog-track" style="margin-bottom:var(--sp-2);height:6px;">
-              <div class="prog-fill prog-sky" style="width:45%;"></div>
+            <div class="kpi-value" id="wealth-expense" style="font-size:var(--text-3xl);color:var(--sunset);margin-bottom:8px;">$0</div>
+            <div class="prog-track" style="margin-bottom:var(--sp-2);height:4px;">
+              <div id="expense-bar" class="prog-fill prog-sunset" style="width:0%;"></div>
             </div>
+            <span id="expense-pct-label" class="kpi-change flat" style="font-size:10px;">— del ingreso</span>
             <button id="edit-monthly-expense" class="btn-kc" style="position:absolute;top:var(--sp-3);right:var(--sp-3);" title="Editar">✎</button>
+          </div>
+
+          <div class="card card-interactive card-in d3">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Flujo neto / mes</div>
+            <div class="kpi-value" id="wealth-net" style="font-size:var(--text-3xl);margin-bottom:8px;">$0</div>
+            <div class="prog-track" style="margin-bottom:var(--sp-2);height:4px;">
+              <div id="net-bar" class="prog-fill prog-gold" style="width:0%;"></div>
+            </div>
+            <span id="net-label" class="kpi-change flat" style="font-size:10px;">Ingreso − Gasto</span>
+          </div>
+
+          <div class="card card-interactive card-in d4">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Tasa de ahorro</div>
+            <div class="kpi-value" id="wealth-savings" style="font-size:var(--text-3xl);color:var(--gold);margin-bottom:8px;">0%</div>
+            <div class="prog-track" style="margin-bottom:var(--sp-2);height:4px;">
+              <div id="savings-bar" class="prog-fill prog-gold" style="width:0%;"></div>
+            </div>
+            <span id="savings-label" class="kpi-change flat" style="font-size:10px;">Meta recomendada: ≥50%</span>
           </div>
         </div>
 
-        <!-- Donut + Distribución -->
+        <!-- Portafolio donut + Activos -->
         <div class="g2">
           <div class="card card-in d1">
             <div class="sh">
               <div class="sh-left">
                 <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
                 <h2 class="sh-title">Portafolio</h2>
-                <p class="sh-sub">Distribución de activos</p>
+                <p class="sh-sub" id="portfolio-sub">Distribución por tipo de activo</p>
               </div>
             </div>
-
-            <div class="flex gap-6 items-center" style="flex-wrap:wrap;">
-              <!-- Donut -->
+            <div class="flex gap-6 items-center" style="flex-wrap:wrap;margin-top:var(--sp-2);">
               <div class="donut-wrap">
-                <div class="donut">
+                <div id="wealth-donut" class="donut" style="background:conic-gradient(rgba(20,16,10,0.06) 0% 100%);">
                   <div class="donut-hole">
-                    <span class="font-serif" style="font-size:var(--text-lg);font-weight:300;color:var(--text);">$523K</span>
-                    <span style="font-size:var(--text-10);color:var(--text-3);font-weight:600;letter-spacing:0.06em;">INVERSIONES</span>
+                    <span class="font-serif" id="donut-center-val" style="font-size:var(--text-lg);font-weight:300;color:var(--text);">$0</span>
+                    <span id="donut-center-label" style="font-size:9px;color:var(--text-3);font-weight:600;letter-spacing:0.06em;">TOTAL</span>
                   </div>
                 </div>
               </div>
-
-              <!-- Leyenda -->
-              <div class="flex flex-col gap-3 flex-1">
-                <div class="flex items-center gap-3">
-                  <div class="legend-dot" style="background:var(--gold);"></div>
-                  <div style="flex:1;">
-                    <div class="flex justify-between" style="margin-bottom:4px;">
-                      <span style="font-size:var(--text-sm);color:var(--text-2);">Renta Variable</span>
-                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--gold-3);">42%</span>
-                    </div>
-                    <div class="prog-track"><div class="prog-fill prog-gold" data-w="42" style="width:42%;"></div></div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="legend-dot" style="background:var(--emerald-2);"></div>
-                  <div style="flex:1;">
-                    <div class="flex justify-between" style="margin-bottom:4px;">
-                      <span style="font-size:var(--text-sm);color:var(--text-2);">Renta Fija</span>
-                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--emerald-2);">28%</span>
-                    </div>
-                    <div class="prog-track"><div class="prog-fill prog-emerald" data-w="28" style="width:28%;"></div></div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="legend-dot" style="background:var(--sunset-2);"></div>
-                  <div style="flex:1;">
-                    <div class="flex justify-between" style="margin-bottom:4px;">
-                      <span style="font-size:var(--text-sm);color:var(--text-2);">Inmobiliario</span>
-                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--sunset);">18%</span>
-                    </div>
-                    <div class="prog-track"><div class="prog-fill prog-sunset" data-w="18" style="width:18%;"></div></div>
-                  </div>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="legend-dot" style="background:var(--sky-2);"></div>
-                  <div style="flex:1;">
-                    <div class="flex justify-between" style="margin-bottom:4px;">
-                      <span style="font-size:var(--text-sm);color:var(--text-2);">Crypto &amp; Alt.</span>
-                      <span style="font-size:var(--text-sm);font-weight:600;color:var(--sky);">12%</span>
-                    </div>
-                    <div class="prog-track"><div class="prog-fill prog-sky" data-w="12" style="width:12%;"></div></div>
-                  </div>
-                </div>
-              </div>
+              <div id="portfolio-legend" class="flex flex-col gap-3 flex-1"></div>
             </div>
           </div>
 
-          <!-- Activos -->
           <div class="card card-in d2">
             <div class="sh">
               <div class="sh-left">
                 <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
                 <h2 class="sh-title">Activos</h2>
-                <p class="sh-sub">Posiciones del portafolio</p>
+                <p class="sh-sub">Toca cualquier activo para editar</p>
               </div>
               <button id="btn-add-asset" class="btn btn-glass btn-sm">+ Activo</button>
             </div>
-
             <div id="assets-list"></div>
           </div>
         </div>
 
-        <!-- Chat asesor -->
-        <div class="card card-ai card-in">
-          <div class="flex items-center gap-2" style="margin-bottom:var(--sp-4);">
-            <div style="width:8px;height:8px;border-radius:50%;background:var(--emerald-3);box-shadow:0 0 0 3px rgba(74,174,136,0.20);"></div>
-            <span class="label-upper" style="color:var(--emerald-2);">Asesor financiero IA</span>
-            <span class="badge badge-emerald" style="margin-left:auto;">En línea</span>
-          </div>
-
-          <div class="chat-messages" style="max-height:180px;margin-bottom:var(--sp-3);">
-            <div class="chat-row">
-              <div class="chat-avatar-sm" style="background:rgba(26,92,69,0.12);color:var(--emerald-2);">AI</div>
-              <div class="chat-bubble ai">Tu portafolio tiene +8.7% YTD, superando el benchmark (S&P 500: +6.2%). Recomiendo rebalancear 5% de renta variable a renta fija dado el ciclo actual de tasas.</div>
-            </div>
-            <div class="chat-row user">
-              <div class="chat-avatar-sm" style="background:rgba(200,168,75,0.15);color:var(--gold-3);">AS</div>
-              <div class="chat-bubble user">¿Debo aumentar Bitcoin?</div>
-            </div>
-            <div class="chat-row">
-              <div class="chat-avatar-sm" style="background:rgba(26,92,69,0.12);color:var(--emerald-2);">AI</div>
-              <div class="chat-bubble ai">Con +34% YTD, BTC cumplió su rol especulativo. Mantén el 8% actual. No aumentes hasta consolidación sostenida >$70K por al menos 3 semanas. <span class="ai-cursor" style="background:var(--emerald-3);"></span></div>
+        <!-- Balance mensual visual -->
+        <div class="card card-in">
+          <div class="sh">
+            <div class="sh-left">
+              <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
+              <h2 class="sh-title">Balance mensual</h2>
+              <p class="sh-sub">Flujo de caja · mes actual</p>
             </div>
           </div>
-
-          <div class="chat-input-row">
-            <input class="input-glass chat-field" type="text" placeholder="Consulta a tu asesor financiero…" style="flex:1;" />
-            <button class="btn btn-emerald btn-sm chat-send">→</button>
-          </div>
+          <div id="cashflow-bars" class="flex flex-col gap-4" style="margin-top:var(--sp-3);"></div>
         </div>
 
       </section><!-- /WEALTHOS -->

@@ -1266,20 +1266,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ════════════════════════════════════════════════════════
-     WEALTHOS — ACTIVOS
+     WEALTHOS
      ════════════════════════════════════════════════════════ */
-  function initWealth() {
-    renderAssets();
-    renderWealthKPIs();
+  const ASSET_TYPE_COLORS = {
+    'Renta Variable': '#C8A84B',
+    'Renta Fija':     '#2E7D5E',
+    'Inmobiliario':   '#D96E32',
+    'Crypto':         '#3470B8',
+    'Commodity':      '#9B7653',
+    'Efectivo':       '#7A8C9E',
+  };
 
-    // Botones de editar KPIs — solo se registran una vez
-    ['monthly-income','monthly-expense','savings-rate'].forEach(field => {
-      document.getElementById(`edit-${field}`)?.addEventListener('click', () => {
-        openEditKPI(field, Store.load('wealthos'));
-      });
-    });
+  function refreshWealth() {
+    renderWealthKPIs();
+    renderAssets();
+    renderPortfolioDonut();
+    renderCashFlow();
+  }
+
+  function initWealth() {
+    // Dynamic hero period
+    const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const n = new Date();
+    const periodEl = document.getElementById('wealth-hero-period');
+    if (periodEl) periodEl.textContent = `Resumen · ${MONTHS[n.getMonth()]} ${n.getFullYear()}`;
+
+    refreshWealth();
+
+    document.getElementById('edit-monthly-income')?.addEventListener('click', () => openEditKPI('monthly-income'));
+    document.getElementById('edit-monthly-expense')?.addEventListener('click', () => openEditKPI('monthly-expense'));
 
     document.getElementById('btn-add-asset')?.addEventListener('click', () => {
+      const typeOptions = Object.keys(ASSET_TYPE_COLORS).map(t => `<option>${t}</option>`).join('');
       Modal.open({
         title: 'Agregar activo',
         body: `
@@ -1288,16 +1306,15 @@ document.addEventListener('DOMContentLoaded', () => {
               <label class="form-label">Nombre del activo</label>
               <input id="m-asset-name" class="input-glass w-full" type="text" placeholder="ej. Apple Inc. (AAPL)" />
             </div>
-            <div>
-              <label class="form-label">Tipo</label>
-              <select id="m-asset-type" class="input-glass w-full">
-                <option>Renta Variable</option>
-                <option>Renta Fija</option>
-                <option>Inmobiliario</option>
-                <option>Crypto</option>
-                <option>Commodity</option>
-                <option>Efectivo</option>
-              </select>
+            <div class="g2" style="gap:var(--sp-3);">
+              <div>
+                <label class="form-label">Tipo</label>
+                <select id="m-asset-type" class="input-glass w-full">${typeOptions}</select>
+              </div>
+              <div>
+                <label class="form-label">Emoji</label>
+                <input id="m-asset-emoji" class="input-glass w-full" type="text" maxlength="2" value="💼" />
+              </div>
             </div>
             <div class="g2" style="gap:var(--sp-3);">
               <div>
@@ -1309,34 +1326,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 <input id="m-asset-change" class="input-glass w-full" type="number" placeholder="0.0" step="0.1" />
               </div>
             </div>
-            <div>
-              <label class="form-label">Emoji / ícono</label>
-              <input id="m-asset-emoji" class="input-glass w-full" type="text" placeholder="💼" maxlength="2" value="💼" />
-            </div>
           </div>
         `,
         confirmLabel: '+ Agregar activo',
         onConfirm: () => {
-          const name   = document.getElementById('m-asset-name')?.value?.trim();
-          const value  = parseFloat(document.getElementById('m-asset-value')?.value || 0);
-          if (!name) { Toast.show('Escribe el nombre del activo', 'warning'); return false; }
-          if (!value || value <= 0) { Toast.show('Ingresa un valor válido', 'warning'); return false; }
+          const name  = document.getElementById('m-asset-name')?.value?.trim();
+          const value = parseFloat(document.getElementById('m-asset-value')?.value || 0);
+          if (!name)       { Toast.show('Escribe el nombre del activo', 'warning'); return false; }
+          if (value <= 0)  { Toast.show('Ingresa un valor válido', 'warning'); return false; }
 
           Store.update('wealthos', d => {
             d.assets.push({
               id:     Store.uid(),
               name,
-              type:   document.getElementById('m-asset-type')?.value || 'Otro',
+              type:   document.getElementById('m-asset-type')?.value || 'Renta Variable',
               value,
               change: parseFloat(document.getElementById('m-asset-change')?.value || 0),
               emoji:  document.getElementById('m-asset-emoji')?.value || '💼',
-              pct:    0
             });
             return d;
           });
-
-          renderAssets();
-          renderWealthKPIs();
+          refreshWealth();
           Toast.show('Activo agregado ✓');
         }
       });
@@ -1346,89 +1356,279 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderAssets() {
     const list = document.getElementById('assets-list');
     if (!list) return;
-    const data = Store.load('wealthos');
-
-    // Recalcular porcentajes
+    const data  = Store.load('wealthos');
     const total = data.assets.reduce((s, a) => s + a.value, 0);
     list.innerHTML = '';
 
     if (!data.assets.length) {
-      list.innerHTML = `<p style="text-align:center;color:var(--text-4);font-size:var(--text-sm);padding:var(--sp-5);">Sin activos. Agrega el primero →</p>`;
+      list.innerHTML = `<p style="text-align:center;color:var(--text-4);font-size:var(--text-sm);padding:var(--sp-5) 0;">Sin activos todavía. Agrega el primero →</p>`;
       return;
     }
 
     data.assets.forEach(asset => {
-      const pct   = total > 0 ? ((asset.value / total) * 100).toFixed(1) : 0;
-      const color = asset.change >= 0 ? 'var(--emerald-2)' : 'var(--sunset)';
-      const arrow = asset.change >= 0 ? '↑' : '↓';
+      const pct      = total > 0 ? ((asset.value / total) * 100).toFixed(1) : 0;
+      const isUp     = asset.change >= 0;
+      const typeColor = ASSET_TYPE_COLORS[asset.type] || 'var(--text-4)';
 
       const row = document.createElement('div');
       row.className = 'asset-row';
+      row.style.cursor = 'pointer';
       row.innerHTML = `
-        <div class="asset-icon" style="background:rgba(200,168,75,0.10);">${asset.emoji}</div>
+        <div class="asset-icon" style="background:${typeColor}18;font-size:18px;">${asset.emoji}</div>
         <div style="flex:1;min-width:0;">
-          <p style="font-size:var(--text-sm);font-weight:500;color:var(--text-2);">${asset.name}</p>
-          <p style="font-size:var(--text-xs);color:var(--text-4);">${asset.type} · ${pct}% del portafolio</p>
+          <p style="font-size:var(--text-sm);font-weight:500;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${asset.name}</p>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
+            <span style="font-size:9px;font-weight:600;letter-spacing:0.05em;padding:1px 6px;border-radius:4px;background:${typeColor}18;color:${typeColor};">${asset.type}</span>
+            <span style="font-size:var(--text-xs);color:var(--text-4);">${pct}%</span>
+          </div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <p class="font-serif" style="font-size:var(--text-lg);">${fmt$(asset.value)}</p>
-          <span class="kpi-change ${asset.change >= 0 ? 'up' : 'down'}">${arrow} ${Math.abs(asset.change).toFixed(1)}%</span>
+          <p class="font-serif" style="font-size:var(--text-lg);color:var(--text);">${fmt$(asset.value)}</p>
+          <span class="kpi-change ${isUp ? 'up' : 'down'}" style="font-size:10px;">${isUp ? '↑' : '↓'} ${Math.abs(asset.change).toFixed(1)}% YTD</span>
         </div>
-        <button class="btn-kc btn-kc-del" data-id="${asset.id}" title="Eliminar activo" style="margin-left:8px;flex-shrink:0;">×</button>
       `;
 
-      row.querySelector('.btn-kc-del')?.addEventListener('click', () => {
-        Store.update('wealthos', d => {
-          d.assets = d.assets.filter(a => a.id !== asset.id);
-          return d;
-        });
-        renderAssets();
-        renderWealthKPIs();
-        Toast.show('Activo eliminado', 'info');
-      });
-
+      row.addEventListener('click', () => openEditAsset(asset));
       list.appendChild(row);
     });
   }
 
   function renderWealthKPIs() {
+    const data    = Store.load('wealthos');
+    const total   = data.assets.reduce((s, a) => s + a.value, 0);
+    const income  = data.monthlyIncome  || 0;
+    const expense = data.monthlyExpense || 0;
+    const net     = income - expense;
+    const savings = income > 0 ? Math.round((net / income) * 100) : 0;
+
+    // Totals
+    const totalEl  = document.getElementById('wealth-total');
+    const countEl  = document.getElementById('wealth-asset-count');
+    if (totalEl) totalEl.textContent = fmt$(total);
+    if (countEl) countEl.textContent = `${data.assets.length} activo${data.assets.length !== 1 ? 's' : ''} registrado${data.assets.length !== 1 ? 's' : ''}`;
+
+    // KPIs
+    const incomeEl  = document.getElementById('wealth-income');
+    const expenseEl = document.getElementById('wealth-expense');
+    const netEl     = document.getElementById('wealth-net');
+    const savingsEl = document.getElementById('wealth-savings');
+    if (incomeEl)  incomeEl.textContent  = fmt$(income);
+    if (expenseEl) expenseEl.textContent = fmt$(expense);
+    if (netEl) {
+      netEl.textContent = fmt$(net);
+      netEl.style.color = net >= 0 ? 'var(--emerald-2)' : 'var(--sunset)';
+    }
+    if (savingsEl) {
+      savingsEl.textContent = savings + '%';
+      savingsEl.style.color = savings >= 50 ? 'var(--gold)' : savings >= 30 ? 'var(--sunset-2)' : 'var(--sunset)';
+    }
+
+    // Bars
+    const expPct = income > 0 ? Math.min((expense / income) * 100, 100) : 0;
+    const netPct = income > 0 ? Math.max((net / income) * 100, 0) : 0;
+    const expBar = document.getElementById('expense-bar');
+    const netBar = document.getElementById('net-bar');
+    const savBar = document.getElementById('savings-bar');
+    if (expBar) expBar.style.width = expPct + '%';
+    if (netBar) netBar.style.width = netPct + '%';
+    if (savBar) savBar.style.width = Math.max(0, Math.min(savings, 100)) + '%';
+
+    // Labels
+    const expLabel = document.getElementById('expense-pct-label');
+    const netLabel = document.getElementById('net-label');
+    const savLabel = document.getElementById('savings-label');
+    if (expLabel && income > 0) {
+      expLabel.textContent = `${expPct.toFixed(0)}% del ingreso`;
+      expLabel.className = `kpi-change ${expPct > 70 ? 'down' : 'flat'}`;
+    }
+    if (netLabel) {
+      netLabel.textContent = net >= 0 ? `↑ ${fmt$(net)} guardado` : `↓ Déficit ${fmt$(Math.abs(net))}`;
+      netLabel.className = `kpi-change ${net >= 0 ? 'up' : 'down'}`;
+    }
+    if (savLabel) {
+      savLabel.textContent = savings >= 50 ? `✓ Por encima de la meta (≥50%)` : `Meta recomendada: ≥50%`;
+      savLabel.className = `kpi-change ${savings >= 50 ? 'up' : 'flat'}`;
+    }
+  }
+
+  function renderPortfolioDonut() {
     const data  = Store.load('wealthos');
     const total = data.assets.reduce((s, a) => s + a.value, 0);
 
-    const totalEl    = document.getElementById('wealth-total');
-    const incomeEl   = document.getElementById('wealth-income');
-    const expenseEl  = document.getElementById('wealth-expense');
-    const savingsEl  = document.getElementById('wealth-savings');
+    const donutEl  = document.getElementById('wealth-donut');
+    const centerVal = document.getElementById('donut-center-val');
+    const legend   = document.getElementById('portfolio-legend');
+    if (!donutEl || !legend) return;
 
-    if (totalEl)   totalEl.textContent   = fmt$(total);
-    if (incomeEl)  incomeEl.textContent  = fmt$(data.monthlyIncome  || 0);
-    if (expenseEl) expenseEl.textContent = fmt$(data.monthlyExpense || 0);
-    if (savingsEl) savingsEl.textContent = (data.savingsRate || 0) + '%';
+    if (centerVal) centerVal.textContent = fmt$(total);
 
-    // Actualizar total en KPI investments card también
-    const invEl = document.querySelector('#kpi-investments .kpi-value');
-    if (invEl) invEl.textContent = fmt$(total);
+    if (!data.assets.length || total === 0) {
+      donutEl.style.background = 'conic-gradient(rgba(20,16,10,0.06) 0% 100%)';
+      legend.innerHTML = `<p style="color:var(--text-4);font-size:var(--text-sm);">Agrega activos para ver la distribución</p>`;
+      return;
+    }
+
+    // Agrupar por tipo
+    const groups = {};
+    data.assets.forEach(a => {
+      groups[a.type] = (groups[a.type] || 0) + a.value;
+    });
+
+    const segments = Object.entries(groups)
+      .map(([type, val]) => ({ type, val, pct: (val / total) * 100, color: ASSET_TYPE_COLORS[type] || '#8899AA' }))
+      .sort((a, b) => b.val - a.val);
+
+    // Conic gradient
+    let cum = 0;
+    const conic = segments.map(s => {
+      const from = cum.toFixed(2);
+      cum += s.pct;
+      return `${s.color} ${from}% ${cum.toFixed(2)}%`;
+    }).join(', ');
+    donutEl.style.background = `conic-gradient(${conic})`;
+
+    // Leyenda dinámica
+    legend.innerHTML = segments.map(s => `
+      <div class="flex items-center gap-3">
+        <div style="width:10px;height:10px;border-radius:3px;background:${s.color};flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div class="flex justify-between" style="margin-bottom:3px;">
+            <span style="font-size:var(--text-sm);color:var(--text-2);">${s.type}</span>
+            <span style="font-size:var(--text-sm);font-weight:600;color:${s.color};">${s.pct.toFixed(1)}%</span>
+          </div>
+          <div class="prog-track" style="height:3px;">
+            <div style="width:${s.pct.toFixed(1)}%;height:100%;border-radius:2px;background:${s.color};transition:width 0.6s ease;"></div>
+          </div>
+        </div>
+      </div>
+    `).join('');
   }
 
-  function openEditKPI(field, data) {
-    const labels = { 'monthly-income': 'Ingresos mensuales (USD)', 'monthly-expense': 'Gastos mensuales (USD)', 'savings-rate': 'Tasa de ahorro (%)' };
-    const keys   = { 'monthly-income': 'monthlyIncome', 'monthly-expense': 'monthlyExpense', 'savings-rate': 'savingsRate' };
+  function renderCashFlow() {
+    const data    = Store.load('wealthos');
+    const income  = data.monthlyIncome  || 0;
+    const expense = data.monthlyExpense || 0;
+    const net     = income - expense;
+    const bars    = document.getElementById('cashflow-bars');
+    if (!bars) return;
+
+    const row = (label, value, widthPct, color, gradient = false) => `
+      <div>
+        <div class="flex justify-between" style="margin-bottom:6px;">
+          <span style="font-size:var(--text-sm);color:var(--text-3);">${label}</span>
+          <span style="font-size:var(--text-sm);font-weight:600;color:${color};">${fmt$(value)}</span>
+        </div>
+        <div class="prog-track" style="height:8px;border-radius:6px;">
+          <div style="width:${Math.max(0, Math.min(widthPct, 100)).toFixed(1)}%;height:100%;border-radius:6px;transition:width 0.6s ease;${gradient ? `background:linear-gradient(90deg,${color}aa,${color});` : `background:${color};`}"></div>
+        </div>
+      </div>
+    `;
+
+    bars.innerHTML = `
+      ${row('↑ Ingresos mensuales', income, 100, '#2E7D5E')}
+      ${row('↓ Gastos mensuales',   expense, income > 0 ? (expense / income) * 100 : 0, '#D96E32')}
+      <div style="border-top:0.5px solid rgba(20,16,10,0.07);padding-top:var(--sp-3);">
+        ${row('= Ahorro neto', net, income > 0 ? Math.max(net / income * 100, 0) : 0, '#C8A84B', true)}
+      </div>
+    `;
+  }
+
+  function openEditKPI(field) {
+    const data   = Store.load('wealthos');
+    const labels = { 'monthly-income': 'Ingresos mensuales (USD)', 'monthly-expense': 'Gastos mensuales (USD)' };
+    const keys   = { 'monthly-income': 'monthlyIncome', 'monthly-expense': 'monthlyExpense' };
     const key    = keys[field];
 
     Modal.open({
       title: `Editar: ${labels[field]}`,
       body: `
         <label class="form-label">${labels[field]}</label>
-        <input id="m-kpi-val" class="input-glass w-full" type="number" value="${data[key] || 0}" min="0" step="${field === 'savings-rate' ? 1 : 100}" />
+        <input id="m-kpi-val" class="input-glass w-full" type="number" value="${data[key] || 0}" min="0" step="100" />
       `,
       confirmLabel: 'Guardar',
       onConfirm: () => {
         const val = parseFloat(document.getElementById('m-kpi-val')?.value || 0);
         Store.update('wealthos', d => { d[key] = val; return d; });
-        renderWealthKPIs();
+        refreshWealth();
         Toast.show('Dato actualizado ✓');
       }
     });
+  }
+
+  function openEditAsset(asset) {
+    const typeOptions = Object.keys(ASSET_TYPE_COLORS).map(t =>
+      `<option ${t === asset.type ? 'selected' : ''}>${t}</option>`
+    ).join('');
+
+    Modal.open({
+      title: 'Editar activo',
+      body: `
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="form-label">Nombre</label>
+            <input id="m-ea-name" class="input-glass w-full" value="${asset.name}" />
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
+            <div>
+              <label class="form-label">Tipo</label>
+              <select id="m-ea-type" class="input-glass w-full">${typeOptions}</select>
+            </div>
+            <div>
+              <label class="form-label">Emoji</label>
+              <input id="m-ea-emoji" class="input-glass w-full" value="${asset.emoji}" maxlength="2" />
+            </div>
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
+            <div>
+              <label class="form-label">Valor (USD)</label>
+              <input id="m-ea-value" class="input-glass w-full" type="number" value="${asset.value}" min="0" />
+            </div>
+            <div>
+              <label class="form-label">Cambio YTD (%)</label>
+              <input id="m-ea-change" class="input-glass w-full" type="number" step="0.1" value="${asset.change}" />
+            </div>
+          </div>
+          <button id="m-ea-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar activo</button>
+        </div>
+      `,
+      confirmLabel: 'Guardar cambios',
+      onConfirm: () => {
+        const name  = document.getElementById('m-ea-name')?.value?.trim();
+        const value = parseFloat(document.getElementById('m-ea-value')?.value || 0);
+        if (!name)      { Toast.show('El nombre no puede estar vacío', 'warning'); return false; }
+        if (value <= 0) { Toast.show('El valor debe ser mayor a 0', 'warning'); return false; }
+
+        Store.update('wealthos', d => {
+          const a = d.assets.find(x => x.id === asset.id);
+          if (a) {
+            a.name   = name;
+            a.type   = document.getElementById('m-ea-type')?.value   || asset.type;
+            a.emoji  = document.getElementById('m-ea-emoji')?.value  || asset.emoji;
+            a.value  = value;
+            a.change = parseFloat(document.getElementById('m-ea-change')?.value || 0);
+          }
+          return d;
+        });
+        refreshWealth();
+        Toast.show('Activo actualizado ✓');
+      }
+    });
+
+    setTimeout(() => {
+      document.getElementById('m-ea-delete')?.addEventListener('click', () => {
+        Modal.open({
+          title: 'Eliminar activo',
+          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${asset.name}</strong>? Esta acción no se puede deshacer.</p>`,
+          confirmLabel: 'Eliminar',
+          confirmClass: 'btn-danger',
+          onConfirm: () => {
+            Store.update('wealthos', d => { d.assets = d.assets.filter(a => a.id !== asset.id); return d; });
+            refreshWealth();
+            Toast.show('Activo eliminado', 'info');
+          }
+        });
+      });
+    }, 50);
   }
 
   /* ════════════════════════════════════════════════════════
@@ -2590,7 +2790,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ════════════════════════════════════════════════════════ */
   window.addEventListener('moduleChanged', ({ detail }) => {
     const { module } = detail;
-    if (module === 'wealthos')    { renderAssets(); renderWealthKPIs(); }
+    if (module === 'wealthos')    { refreshWealth(); }
     if (module === 'projectos')   { renderSprintKanban(); }
     if (module === 'secondbrain') { renderBooks(); renderIdeas(); renderHabits(); updateBrainKPIs(); }
     if (module === 'dayos')       { renderKanban(); renderPriorities(); renderWeekTabs(); renderAgendaBlocks(agendaSelectedDate); updateAllStats(); renderReflectionHistory(); updateGreeting(); }
