@@ -1632,19 +1632,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ════════════════════════════════════════════════════════
-     PROJECTOS — SPRINT KANBAN
+     PROJECTOS
      ════════════════════════════════════════════════════════ */
-  function initProjectos() {
-    renderSprintKanban();
+  const PROJ_COLORS = {
+    gold:    { fill:'prog-gold',    badge:'badge-gold',    dot:'var(--gold)',     text:'var(--gold-3)'    },
+    emerald: { fill:'prog-emerald', badge:'badge-emerald', dot:'var(--emerald-2)',text:'var(--emerald-2)' },
+    sky:     { fill:'prog-sky',     badge:'badge-sky',     dot:'var(--sky)',      text:'var(--sky)'       },
+    sunset:  { fill:'prog-sunset',  badge:'badge-sunset',  dot:'var(--sunset)',   text:'var(--sunset)'    },
+    neutral: { fill:'prog-neutral', badge:'badge-neutral', dot:'var(--text-4)',   text:'var(--text-3)'    },
+  };
 
-    document.getElementById('btn-add-sprint-task')?.addEventListener('click', () => {
+  function refreshProjectos() {
+    renderSprintKanban();
+    renderProjects();
+    renderMilestones();
+    renderProjectKPIs();
+  }
+
+  function initProjectos() {
+    refreshProjectos();
+
+    const openTaskModal = () => {
       Modal.open({
-        title: 'Nueva tarea de sprint',
+        title: 'Nueva tarea',
         body: `
           <div class="flex flex-col gap-3">
             <div>
               <label class="form-label">Título</label>
-              <input id="m-pt-title" class="input-glass w-full" type="text" placeholder="¿Qué hay que implementar?" />
+              <input id="m-pt-title" class="input-glass w-full" type="text" placeholder="¿Qué hay que hacer?" />
+            </div>
+            <div>
+              <label class="form-label">Notas <span style="color:var(--text-4);font-weight:400;">(opcional)</span></label>
+              <textarea id="m-pt-notes" class="input-glass textarea-glass w-full" placeholder="Contexto, links, detalles…" style="min-height:64px;"></textarea>
             </div>
             <div class="g2" style="gap:var(--sp-3);">
               <div>
@@ -1652,8 +1671,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <select id="m-pt-points" class="input-glass w-full">
                   <option value="1">1 pt</option>
                   <option value="2">2 pts</option>
-                  <option value="3">3 pts</option>
-                  <option value="5" selected>5 pts</option>
+                  <option value="3" selected>3 pts</option>
+                  <option value="5">5 pts</option>
                   <option value="8">8 pts</option>
                   <option value="13">13 pts</option>
                 </select>
@@ -1673,63 +1692,333 @@ document.addEventListener('DOMContentLoaded', () => {
         onConfirm: () => {
           const title = document.getElementById('m-pt-title')?.value?.trim();
           if (!title) { Toast.show('Escribe el título', 'warning'); return false; }
-
           Store.update('projectos', d => {
             d.tasks.backlog.unshift({
               id:       Store.uid(),
               title,
+              notes:    document.getElementById('m-pt-notes')?.value?.trim() || '',
               points:   parseInt(document.getElementById('m-pt-points')?.value || 3, 10),
               badge:    document.getElementById('m-pt-badge')?.value || 'neutral',
-              progress: 0
+              progress: 0,
+              createdAt: Date.now()
             });
             return d;
           });
+          refreshProjectos();
+          Toast.show('Tarea agregada ✓');
+        }
+      });
+    };
 
-          renderSprintKanban();
-          Toast.show('Tarea de sprint agregada ✓');
+    document.getElementById('btn-add-sprint-task')?.addEventListener('click', openTaskModal);
+
+    document.getElementById('btn-add-project')?.addEventListener('click', () => {
+      Modal.open({
+        title: 'Nuevo proyecto',
+        body: `
+          <div class="flex flex-col gap-3">
+            <div>
+              <label class="form-label">Nombre del proyecto</label>
+              <input id="m-proj-name" class="input-glass w-full" type="text" placeholder="ej. AlexOS v2" />
+            </div>
+            <div>
+              <label class="form-label">Descripción</label>
+              <input id="m-proj-desc" class="input-glass w-full" type="text" placeholder="En qué consiste…" />
+            </div>
+            <div class="g2" style="gap:var(--sp-3);">
+              <div>
+                <label class="form-label">Color</label>
+                <select id="m-proj-color" class="input-glass w-full">
+                  <option value="gold">Dorado</option>
+                  <option value="emerald">Esmeralda</option>
+                  <option value="sky">Azul</option>
+                  <option value="sunset">Naranja</option>
+                  <option value="neutral">Neutro</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Estado</label>
+                <select id="m-proj-status" class="input-glass w-full">
+                  <option value="active">Activo</option>
+                  <option value="paused">Pausado</option>
+                  <option value="done">Completado</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Progreso: <span id="m-proj-prog-label">0%</span></label>
+              <input id="m-proj-progress" type="range" min="0" max="100" value="0"
+                     style="width:100%;accent-color:var(--gold);"
+                     oninput="document.getElementById('m-proj-prog-label').textContent=this.value+'%'" />
+            </div>
+          </div>
+        `,
+        confirmLabel: '+ Agregar proyecto',
+        onConfirm: () => {
+          const name = document.getElementById('m-proj-name')?.value?.trim();
+          if (!name) { Toast.show('Escribe el nombre', 'warning'); return false; }
+          Store.update('projectos', d => {
+            if (!d.projects) d.projects = [];
+            d.projects.unshift({
+              id:          Store.uid(),
+              name,
+              description: document.getElementById('m-proj-desc')?.value?.trim() || '',
+              color:       document.getElementById('m-proj-color')?.value || 'gold',
+              status:      document.getElementById('m-proj-status')?.value || 'active',
+              progress:    parseInt(document.getElementById('m-proj-progress')?.value || 0, 10),
+              createdAt:   Date.now()
+            });
+            return d;
+          });
+          refreshProjectos();
+          Toast.show('Proyecto creado ✓');
+        }
+      });
+    });
+
+    document.getElementById('btn-add-milestone')?.addEventListener('click', () => {
+      Modal.open({
+        title: 'Nuevo hito',
+        body: `
+          <div class="flex flex-col gap-3">
+            <div>
+              <label class="form-label">Título del hito</label>
+              <input id="m-ms-title" class="input-glass w-full" type="text" placeholder="ej. MVP público" />
+            </div>
+            <div>
+              <label class="form-label">Descripción</label>
+              <input id="m-ms-desc" class="input-glass w-full" type="text" placeholder="Qué incluye este hito…" />
+            </div>
+            <div class="g2" style="gap:var(--sp-3);">
+              <div>
+                <label class="form-label">Período</label>
+                <input id="m-ms-period" class="input-glass w-full" type="text" placeholder="ej. Q2 2026" />
+              </div>
+              <div>
+                <label class="form-label">Estado</label>
+                <select id="m-ms-status" class="input-glass w-full">
+                  <option value="planned">Planificado</option>
+                  <option value="active">En curso</option>
+                  <option value="done">Completado</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Progreso: <span id="m-ms-prog-label">0%</span></label>
+              <input id="m-ms-progress" type="range" min="0" max="100" value="0"
+                     style="width:100%;accent-color:var(--gold);"
+                     oninput="document.getElementById('m-ms-prog-label').textContent=this.value+'%'" />
+            </div>
+          </div>
+        `,
+        confirmLabel: '+ Agregar hito',
+        onConfirm: () => {
+          const title = document.getElementById('m-ms-title')?.value?.trim();
+          if (!title) { Toast.show('Escribe el título', 'warning'); return false; }
+          Store.update('projectos', d => {
+            if (!d.milestones) d.milestones = [];
+            d.milestones.push({
+              id:          Store.uid(),
+              title,
+              description: document.getElementById('m-ms-desc')?.value?.trim() || '',
+              period:      document.getElementById('m-ms-period')?.value?.trim() || '',
+              status:      document.getElementById('m-ms-status')?.value || 'planned',
+              progress:    parseInt(document.getElementById('m-ms-progress')?.value || 0, 10),
+            });
+            return d;
+          });
+          renderMilestones();
+          Toast.show('Hito agregado ✓');
         }
       });
     });
   }
 
+  function renderProjectKPIs() {
+    const data   = Store.load('projectos');
+    const tasks  = data.tasks || { backlog:[], doing:[], done:[] };
+    const total  = tasks.backlog.length + tasks.doing.length + tasks.done.length;
+    const ptDone = tasks.done.reduce((s, t) => s + (t.points || 0), 0);
+    const ptTotal= [tasks.backlog, tasks.doing, tasks.done].flat().reduce((s, t) => s + (t.points || 0), 0);
+    const vel    = total > 0 ? Math.round((tasks.done.length / total) * 100) : 0;
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('proj-kpi-total',  total);
+    set('proj-kpi-doing',  tasks.doing.length);
+    set('proj-kpi-done',   tasks.done.length);
+    set('proj-kpi-points', ptDone);
+    set('proj-kpi-points-label', `de ${ptTotal} pts totales`);
+    set('proj-velocity',   vel + '%');
+
+    const bar = document.getElementById('proj-velocity-bar');
+    if (bar) bar.style.width = vel + '%';
+
+    const sub = document.getElementById('proj-hero-sub');
+    const projs = (data.projects || []).filter(p => p.status === 'active').length;
+    if (sub) sub.textContent = `${projs} proyecto${projs !== 1 ? 's' : ''} activo${projs !== 1 ? 's' : ''} · ${total} tareas en sprint`;
+  }
+
+  function renderProjects() {
+    const grid = document.getElementById('projects-grid');
+    if (!grid) return;
+    const data     = Store.load('projectos');
+    const projects = data.projects || [];
+    grid.innerHTML = '';
+
+    if (!projects.length) {
+      grid.innerHTML = `<p style="color:var(--text-4);font-size:var(--text-sm);grid-column:1/-1;padding:var(--sp-2) 0;">Sin proyectos todavía. Agrega el primero →</p>`;
+      return;
+    }
+
+    const STATUS_LABEL = { active:'Activo', paused:'Pausado', done:'Completado' };
+    const STATUS_BADGE = { active:'badge-gold', paused:'badge-neutral', done:'badge-emerald' };
+
+    projects.forEach(proj => {
+      const c = PROJ_COLORS[proj.color] || PROJ_COLORS.gold;
+      const div = document.createElement('div');
+      div.className = 'card card-interactive card-in';
+      div.style.cursor = 'pointer';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--sp-3);">
+          <div style="min-width:0;">
+            <p style="font-size:var(--text-sm);font-weight:600;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${proj.name}</p>
+            <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${proj.description || '—'}</p>
+          </div>
+          <span class="badge ${STATUS_BADGE[proj.status] || 'badge-neutral'}" style="flex-shrink:0;margin-left:8px;">${STATUS_LABEL[proj.status] || proj.status}</span>
+        </div>
+        <div class="prog-track" style="height:4px;margin-bottom:5px;">
+          <div class="prog-fill ${c.fill}" style="width:${proj.progress}%;"></div>
+        </div>
+        <p style="font-size:10px;color:${c.text};text-align:right;">${proj.progress}% completado</p>
+      `;
+      div.addEventListener('click', () => openEditProject(proj));
+      grid.appendChild(div);
+    });
+
+    const subEl = document.getElementById('proj-projects-sub');
+    if (subEl) {
+      const active = projects.filter(p => p.status === 'active').length;
+      subEl.textContent = `${projects.length} proyecto${projects.length !== 1 ? 's' : ''} · ${active} activo${active !== 1 ? 's' : ''}`;
+    }
+  }
+
+  function openEditProject(proj) {
+    const c = PROJ_COLORS[proj.color] || PROJ_COLORS.gold;
+    Modal.open({
+      title: proj.name,
+      body: `
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="form-label">Nombre</label>
+            <input id="m-ep-name" class="input-glass w-full" value="${proj.name}" />
+          </div>
+          <div>
+            <label class="form-label">Descripción</label>
+            <input id="m-ep-desc" class="input-glass w-full" value="${proj.description || ''}" />
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
+            <div>
+              <label class="form-label">Color</label>
+              <select id="m-ep-color" class="input-glass w-full">
+                ${Object.keys(PROJ_COLORS).map(k => `<option value="${k}" ${k===proj.color?'selected':''}>${{gold:'Dorado',emerald:'Esmeralda',sky:'Azul',sunset:'Naranja',neutral:'Neutro'}[k]}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Estado</label>
+              <select id="m-ep-status" class="input-glass w-full">
+                <option value="active"  ${proj.status==='active' ?'selected':''}>Activo</option>
+                <option value="paused"  ${proj.status==='paused' ?'selected':''}>Pausado</option>
+                <option value="done"    ${proj.status==='done'   ?'selected':''}>Completado</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Progreso: <span id="m-ep-prog-label">${proj.progress}%</span></label>
+            <input id="m-ep-progress" type="range" min="0" max="100" value="${proj.progress}"
+                   style="width:100%;accent-color:var(--gold);"
+                   oninput="document.getElementById('m-ep-prog-label').textContent=this.value+'%'" />
+          </div>
+          <button id="m-ep-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar proyecto</button>
+        </div>
+      `,
+      confirmLabel: 'Guardar cambios',
+      onConfirm: () => {
+        const name = document.getElementById('m-ep-name')?.value?.trim();
+        if (!name) { Toast.show('El nombre no puede estar vacío', 'warning'); return false; }
+        Store.update('projectos', d => {
+          const p = (d.projects || []).find(x => x.id === proj.id);
+          if (p) {
+            p.name        = name;
+            p.description = document.getElementById('m-ep-desc')?.value?.trim() || '';
+            p.color       = document.getElementById('m-ep-color')?.value   || proj.color;
+            p.status      = document.getElementById('m-ep-status')?.value  || proj.status;
+            p.progress    = parseInt(document.getElementById('m-ep-progress')?.value || proj.progress, 10);
+          }
+          return d;
+        });
+        refreshProjectos();
+        Toast.show('Proyecto actualizado ✓');
+      }
+    });
+
+    setTimeout(() => {
+      document.getElementById('m-ep-delete')?.addEventListener('click', () => {
+        Modal.open({
+          title: 'Eliminar proyecto',
+          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${proj.name}</strong>? No se puede deshacer.</p>`,
+          confirmLabel: 'Eliminar',
+          confirmClass: 'btn-danger',
+          onConfirm: () => {
+            Store.update('projectos', d => { d.projects = (d.projects || []).filter(p => p.id !== proj.id); return d; });
+            refreshProjectos();
+            Toast.show('Proyecto eliminado', 'info');
+          }
+        });
+      });
+    }, 50);
+  }
+
   function renderSprintKanban() {
-    const data = Store.load('projectos');
-    const COLS = ['backlog','doing','done'];
-    const LABELS = { backlog:'Backlog', doing:'En curso', done:'Review / Done' };
-    const COLORS  = { backlog:'neutral', doing:'gold', done:'emerald' };
+    const data   = Store.load('projectos');
+    const COLS   = ['backlog','doing','done'];
+    const LABELS = { backlog:'Backlog', doing:'En curso', done:'Completado' };
+    const NEXT   = { backlog:'doing', doing:'done', done:'backlog' };
+    const BADGE_LABEL = { gold:'Alta', sky:'Media', neutral:'Baja', emerald:'✓' };
 
     COLS.forEach(col => {
-      const el = document.getElementById(`sprint-${col}`);
+      const el  = document.getElementById(`sprint-${col}`);
       const cnt = document.querySelector(`[data-sprint-count="${col}"]`);
       if (!el) return;
       if (cnt) cnt.textContent = data.tasks[col].length;
-
       el.innerHTML = '';
+
+      if (!data.tasks[col].length) {
+        el.innerHTML = `<p style="text-align:center;color:var(--text-4);font-size:10px;padding:var(--sp-4) 0;">Vacío</p>`;
+        return;
+      }
+
       data.tasks[col].forEach(task => {
         const card = document.createElement('div');
         card.className = 'kanban-card card-in';
-        const nextLabel = { backlog:'→ Iniciar', doing:'→ Review', done:'↩ Reabrir' };
-        const prog = task.progress || (col === 'done' ? 100 : 0);
+        const prog = task.progress ?? (col === 'done' ? 100 : 0);
+        const isDone = col === 'done';
+        const c = PROJ_COLORS[task.badge] || PROJ_COLORS.neutral;
 
         card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
-            <p style="font-size:var(--text-xs);font-weight:500;color:${col==='done'?'var(--text-4)':'var(--text-2)'};${col==='done'?'text-decoration:line-through;':''}line-height:1.35;flex:1;">${task.title}</p>
-            <div class="kc-actions">
-              <button class="kc-move btn-kc" title="${nextLabel[col]}">${col==='done'?'↩':'→'}</button>
-              <button class="kc-delete btn-kc btn-kc-del" title="Eliminar">×</button>
-            </div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px;">
+            <p style="font-size:var(--text-xs);font-weight:500;color:${isDone?'var(--text-4)':'var(--text-2)'};${isDone?'text-decoration:line-through;':''}line-height:1.4;flex:1;cursor:pointer;" class="task-title-click">${task.title}</p>
+            <button class="kc-move btn-kc" title="Mover a ${LABELS[NEXT[col]]}" style="flex-shrink:0;">${isDone?'↩':'→'}</button>
           </div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap;">
-            ${task.badge ? `<span class="badge badge-${task.badge}">${{gold:'Alta',sky:'Media',neutral:'Baja',emerald:'✓ Hecho'}[task.badge]||task.badge}</span>` : ''}
-            <span style="font-size:var(--text-10);color:var(--text-4);">${task.points} pts</span>
-            ${col!=='backlog' ? `<div class="prog-track" style="flex:1;min-width:60px;"><div class="prog-fill prog-${COLORS[col]}" style="width:${prog}%;"></div></div>` : ''}
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+            ${task.badge ? `<span class="badge ${c.badge}" style="font-size:9px;">${BADGE_LABEL[task.badge]||task.badge}</span>` : ''}
+            <span style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">${task.points}pt</span>
+            ${col !== 'backlog' ? `<div class="prog-track" style="flex:1;min-width:40px;height:3px;"><div class="prog-fill ${c.fill}" style="width:${prog}%;"></div></div><span style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">${prog}%</span>` : ''}
           </div>
-          ${col==='doing' ? `<input type="range" class="kc-progress-input" min="0" max="100" value="${prog}" style="width:100%;margin-top:6px;accent-color:var(--gold);cursor:pointer;" data-id="${task.id}"/>` : ''}
+          ${col==='doing' ? `<input type="range" class="kc-progress-input" min="0" max="100" value="${prog}" style="width:100%;margin-top:8px;accent-color:var(--gold);cursor:pointer;" />` : ''}
         `;
 
         card.querySelector('.kc-move')?.addEventListener('click', e => {
           e.stopPropagation();
-          const NEXT = { backlog:'doing', doing:'done', done:'backlog' };
           Store.update('projectos', d => {
             const idx = d.tasks[col].findIndex(t => t.id === task.id);
             if (idx < 0) return d;
@@ -1738,18 +2027,13 @@ document.addEventListener('DOMContentLoaded', () => {
             d.tasks[NEXT[col]].unshift(t);
             return d;
           });
-          renderSprintKanban();
-          Toast.show(`Tarea movida a ${LABELS[NEXT[col]]}`);
+          refreshProjectos();
+          Toast.show(`→ ${LABELS[NEXT[col]]}`);
         });
 
-        card.querySelector('.kc-delete')?.addEventListener('click', e => {
+        card.querySelector('.task-title-click')?.addEventListener('click', e => {
           e.stopPropagation();
-          Store.update('projectos', d => {
-            d.tasks[col] = d.tasks[col].filter(t => t.id !== task.id);
-            return d;
-          });
-          renderSprintKanban();
-          Toast.show('Tarea eliminada', 'info');
+          openEditTask(task, col);
         });
 
         const progSlider = card.querySelector('.kc-progress-input');
@@ -1761,13 +2045,207 @@ document.addEventListener('DOMContentLoaded', () => {
               if (t) t.progress = v;
               return d;
             });
-            card.querySelector('.prog-fill').style.width = v + '%';
+            const bar = card.querySelector('.prog-fill');
+            if (bar) bar.style.width = v + '%';
+            const pct = card.querySelectorAll('[style*="font-mono"]');
+            pct.forEach(el => { if (el.textContent.includes('%')) el.textContent = v + '%'; });
           });
         }
 
         el.appendChild(card);
       });
     });
+  }
+
+  function openEditTask(task, col) {
+    Modal.open({
+      title: 'Editar tarea',
+      body: `
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="form-label">Título</label>
+            <input id="m-et-title" class="input-glass w-full" value="${task.title}" />
+          </div>
+          <div>
+            <label class="form-label">Notas</label>
+            <textarea id="m-et-notes" class="input-glass textarea-glass w-full" style="min-height:64px;">${task.notes || ''}</textarea>
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
+            <div>
+              <label class="form-label">Story points</label>
+              <select id="m-et-points" class="input-glass w-full">
+                ${[1,2,3,5,8,13].map(p => `<option value="${p}" ${p===task.points?'selected':''}>${p} pt${p>1?'s':''}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Prioridad</label>
+              <select id="m-et-badge" class="input-glass w-full">
+                <option value="gold"    ${task.badge==='gold'   ?'selected':''}>Alta</option>
+                <option value="sky"     ${task.badge==='sky'    ?'selected':''}>Media</option>
+                <option value="neutral" ${task.badge==='neutral'?'selected':''}>Baja</option>
+              </select>
+            </div>
+          </div>
+          <button id="m-et-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar tarea</button>
+        </div>
+      `,
+      confirmLabel: 'Guardar',
+      onConfirm: () => {
+        const title = document.getElementById('m-et-title')?.value?.trim();
+        if (!title) { Toast.show('El título no puede estar vacío', 'warning'); return false; }
+        Store.update('projectos', d => {
+          const t = d.tasks[col].find(x => x.id === task.id);
+          if (t) {
+            t.title  = title;
+            t.notes  = document.getElementById('m-et-notes')?.value?.trim() || '';
+            t.points = parseInt(document.getElementById('m-et-points')?.value || task.points, 10);
+            t.badge  = document.getElementById('m-et-badge')?.value || task.badge;
+          }
+          return d;
+        });
+        refreshProjectos();
+        Toast.show('Tarea actualizada ✓');
+      }
+    });
+
+    setTimeout(() => {
+      document.getElementById('m-et-delete')?.addEventListener('click', () => {
+        Modal.open({
+          title: 'Eliminar tarea',
+          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${task.title}</strong>?</p>`,
+          confirmLabel: 'Eliminar',
+          confirmClass: 'btn-danger',
+          onConfirm: () => {
+            Store.update('projectos', d => { d.tasks[col] = d.tasks[col].filter(t => t.id !== task.id); return d; });
+            refreshProjectos();
+            Toast.show('Tarea eliminada', 'info');
+          }
+        });
+      });
+    }, 50);
+  }
+
+  function renderMilestones() {
+    const list = document.getElementById('milestones-list');
+    if (!list) return;
+    const data       = Store.load('projectos');
+    const milestones = data.milestones || [];
+    list.innerHTML   = '';
+
+    if (!milestones.length) {
+      list.innerHTML = `<p style="color:var(--text-4);font-size:var(--text-sm);padding:var(--sp-2) 0;">Sin hitos todavía. Agrega el primero →</p>`;
+      return;
+    }
+
+    const STATUS = {
+      done:    { badge:'badge-emerald', label:'✓ Completado', color:'var(--emerald-2)', dot:'background:var(--emerald-2);box-shadow:0 0 0 3px rgba(46,125,94,0.18);', fill:'prog-emerald' },
+      active:  { badge:'badge-gold',    label:'En curso',     color:'var(--gold-3)',    dot:'background:var(--gold);box-shadow:0 0 0 3px rgba(200,168,75,0.22);animation:gold-pulse 2.5s ease-in-out infinite;', fill:'prog-gold' },
+      planned: { badge:'badge-sky',     label:'Planificado',  color:'var(--sky)',       dot:'background:rgba(52,112,184,0.25);border:1.5px solid var(--sky-2);', fill:'prog-sky' },
+    };
+
+    milestones.forEach((ms, i) => {
+      const s    = STATUS[ms.status] || STATUS.planned;
+      const last = i === milestones.length - 1;
+      const div  = document.createElement('div');
+      div.className = 'timeline-item';
+      div.innerHTML = `
+        <div class="timeline-stem">
+          <div class="timeline-dot" style="${s.dot}"></div>
+          ${!last ? '<div class="timeline-line"></div>' : ''}
+        </div>
+        <div class="timeline-body" style="cursor:pointer;">
+          <div class="flex justify-between items-start" style="margin-bottom:6px;">
+            <div>
+              <p style="font-size:var(--text-sm);font-weight:600;color:${s.color};">${ms.title}</p>
+              ${ms.period ? `<p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">${ms.period}</p>` : ''}
+            </div>
+            <span class="badge ${s.badge}">${s.label}</span>
+          </div>
+          <div class="prog-track" style="margin-bottom:6px;">
+            <div class="prog-fill ${s.fill}" style="width:${ms.progress}%;"></div>
+          </div>
+          ${ms.description ? `<p style="font-size:var(--text-xs);color:var(--text-3);">${ms.description}</p>` : ''}
+        </div>
+      `;
+      div.querySelector('.timeline-body')?.addEventListener('click', () => openEditMilestone(ms));
+      list.appendChild(div);
+    });
+  }
+
+  function openEditMilestone(ms) {
+    const STATUS_OPTS = [
+      { v:'planned', l:'Planificado' },
+      { v:'active',  l:'En curso' },
+      { v:'done',    l:'Completado' },
+    ];
+    Modal.open({
+      title: 'Editar hito',
+      body: `
+        <div class="flex flex-col gap-3">
+          <div>
+            <label class="form-label">Título</label>
+            <input id="m-ems-title" class="input-glass w-full" value="${ms.title}" />
+          </div>
+          <div>
+            <label class="form-label">Descripción</label>
+            <input id="m-ems-desc" class="input-glass w-full" value="${ms.description || ''}" />
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
+            <div>
+              <label class="form-label">Período</label>
+              <input id="m-ems-period" class="input-glass w-full" value="${ms.period || ''}" placeholder="ej. Q3 2026" />
+            </div>
+            <div>
+              <label class="form-label">Estado</label>
+              <select id="m-ems-status" class="input-glass w-full">
+                ${STATUS_OPTS.map(o => `<option value="${o.v}" ${o.v===ms.status?'selected':''}>${o.l}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Progreso: <span id="m-ems-prog-label">${ms.progress}%</span></label>
+            <input id="m-ems-progress" type="range" min="0" max="100" value="${ms.progress}"
+                   style="width:100%;accent-color:var(--gold);"
+                   oninput="document.getElementById('m-ems-prog-label').textContent=this.value+'%'" />
+          </div>
+          <button id="m-ems-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar hito</button>
+        </div>
+      `,
+      confirmLabel: 'Guardar',
+      onConfirm: () => {
+        const title = document.getElementById('m-ems-title')?.value?.trim();
+        if (!title) { Toast.show('El título no puede estar vacío', 'warning'); return false; }
+        Store.update('projectos', d => {
+          const m = (d.milestones || []).find(x => x.id === ms.id);
+          if (m) {
+            m.title       = title;
+            m.description = document.getElementById('m-ems-desc')?.value?.trim()   || '';
+            m.period      = document.getElementById('m-ems-period')?.value?.trim() || '';
+            m.status      = document.getElementById('m-ems-status')?.value         || ms.status;
+            m.progress    = parseInt(document.getElementById('m-ems-progress')?.value || ms.progress, 10);
+          }
+          return d;
+        });
+        renderMilestones();
+        Toast.show('Hito actualizado ✓');
+      }
+    });
+
+    setTimeout(() => {
+      document.getElementById('m-ems-delete')?.addEventListener('click', () => {
+        Modal.open({
+          title: 'Eliminar hito',
+          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${ms.title}</strong>?</p>`,
+          confirmLabel: 'Eliminar',
+          confirmClass: 'btn-danger',
+          onConfirm: () => {
+            Store.update('projectos', d => { d.milestones = (d.milestones || []).filter(m => m.id !== ms.id); return d; });
+            renderMilestones();
+            Toast.show('Hito eliminado', 'info');
+          }
+        });
+      });
+    }, 50);
   }
 
   /* ════════════════════════════════════════════════════════
@@ -2791,7 +3269,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('moduleChanged', ({ detail }) => {
     const { module } = detail;
     if (module === 'wealthos')    { refreshWealth(); }
-    if (module === 'projectos')   { renderSprintKanban(); }
+    if (module === 'projectos')   { refreshProjectos(); }
     if (module === 'secondbrain') { renderBooks(); renderIdeas(); renderHabits(); updateBrainKPIs(); }
     if (module === 'dayos')       { renderKanban(); renderPriorities(); renderWeekTabs(); renderAgendaBlocks(agendaSelectedDate); updateAllStats(); renderReflectionHistory(); updateGreeting(); }
   });

@@ -713,228 +713,109 @@
           <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
           <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:16px;">
             <div>
-              <p class="label-upper" style="margin-bottom:6px;">Sprint 14 · 8 días restantes</p>
+              <p class="label-upper" id="proj-hero-label" style="margin-bottom:6px;">Sprint activo</p>
               <h1 class="font-serif" style="font-size:var(--text-4xl);font-weight:300;letter-spacing:-0.02em;">
                 Project<span class="text-gold-gradient">OS</span>
               </h1>
-              <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:6px;">3 proyectos activos · AlexOS v0.14</p>
+              <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:6px;" id="proj-hero-sub">Gestión de sprints y proyectos</p>
             </div>
-            <div class="flex gap-2">
-              <button class="btn btn-glass btn-sm">← Sprint anterior</button>
-              <button class="btn btn-primary btn-sm" onclick="document.getElementById('btn-add-sprint-task').click()">+ Nueva tarea</button>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
+              <div style="text-align:right;">
+                <p class="label-upper" style="margin-bottom:4px;">Velocidad del sprint</p>
+                <p class="font-serif" id="proj-velocity" style="font-size:var(--text-4xl);font-weight:300;color:var(--gold);">0%</p>
+              </div>
+              <div class="flex gap-2">
+                <button id="btn-add-project" class="btn btn-glass btn-sm">+ Proyecto</button>
+                <button id="btn-add-sprint-task" class="btn btn-primary btn-sm">+ Tarea</button>
+              </div>
             </div>
+          </div>
+          <div class="prog-track" style="margin-top:var(--sp-4);height:5px;">
+            <div id="proj-velocity-bar" class="prog-fill prog-gold" style="width:0%;transition:width 0.8s ease;"></div>
           </div>
         </div>
 
-        <!-- Roadmap Timeline -->
-        <div class="card card-in d1">
+        <!-- 4 KPIs -->
+        <div class="g4">
+          <div class="card card-in d1">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Tareas totales</div>
+            <div class="kpi-value" id="proj-kpi-total" style="font-size:var(--text-3xl);">0</div>
+            <span class="kpi-change flat" style="font-size:10px;margin-top:8px;display:inline-flex;">este sprint</span>
+          </div>
+          <div class="card card-in d2">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">En curso</div>
+            <div class="kpi-value" id="proj-kpi-doing" style="font-size:var(--text-3xl);color:var(--gold-3);">0</div>
+            <span class="kpi-change flat" style="font-size:10px;margin-top:8px;display:inline-flex;">activas ahora</span>
+          </div>
+          <div class="card card-in d3">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Completadas</div>
+            <div class="kpi-value" id="proj-kpi-done" style="font-size:var(--text-3xl);color:var(--emerald-2);">0</div>
+            <span class="kpi-change up" style="font-size:10px;margin-top:8px;display:inline-flex;">done ✓</span>
+          </div>
+          <div class="card card-in d4">
+            <div class="kpi-label" style="margin-bottom:var(--sp-2);">Story points</div>
+            <div class="kpi-value" id="proj-kpi-points" style="font-size:var(--text-3xl);color:var(--sky);">0</div>
+            <span class="kpi-change flat" id="proj-kpi-points-label" style="font-size:10px;margin-top:8px;display:inline-flex;">de 0 totales</span>
+          </div>
+        </div>
+
+        <!-- Proyectos -->
+        <div class="card card-in">
           <div class="sh">
             <div class="sh-left">
               <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
-              <h2 class="sh-title">Roadmap 2025</h2>
-              <p class="sh-sub">Progreso hacia el lanzamiento</p>
+              <h2 class="sh-title">Proyectos</h2>
+              <p class="sh-sub" id="proj-projects-sub">Tus iniciativas activas</p>
             </div>
-            <span class="badge badge-gold">Fase 2 de 4</span>
           </div>
+          <div id="projects-grid" class="g3" style="margin-top:var(--sp-3);"></div>
+        </div>
 
-          <div class="timeline">
-            <!-- Fase 1 -->
-            <div class="timeline-item">
-              <div class="timeline-stem">
-                <div class="timeline-dot" style="background:var(--emerald-2);box-shadow:0 0 0 3px rgba(46,125,94,0.18),0 0 0 5px rgba(46,125,94,0.07);"></div>
-                <div class="timeline-line"></div>
-              </div>
-              <div class="timeline-body">
-                <div class="flex justify-between items-start" style="margin-bottom:6px;">
-                  <div>
-                    <p style="font-size:var(--text-sm);font-weight:600;color:var(--emerald-2);">FASE 1 — Fundamentos</p>
-                    <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">Enero – Marzo 2025</p>
-                  </div>
-                  <span class="badge badge-emerald">✓ Completado</span>
-                </div>
-                <div class="prog-track" style="margin-bottom:6px;">
-                  <div class="prog-fill prog-emerald" data-w="100" style="width:100%;"></div>
-                </div>
-                <p style="font-size:var(--text-xs);color:var(--text-3);">Design System · Auth · Base de datos · API Core · Deploy infra</p>
-              </div>
+        <!-- Sprint Kanban -->
+        <div class="card card-in">
+          <div class="sh">
+            <div class="sh-left">
+              <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
+              <h2 class="sh-title">Sprint activo</h2>
+              <p class="sh-sub">Toca una tarea para editar · → para avanzar</p>
             </div>
-            <!-- Fase 2 -->
-            <div class="timeline-item">
-              <div class="timeline-stem">
-                <div class="timeline-dot" style="background:var(--gold);box-shadow:0 0 0 3px rgba(200,168,75,0.22),0 0 0 5px rgba(200,168,75,0.08);animation:gold-pulse 2.5s ease-in-out infinite;"></div>
-                <div class="timeline-line"></div>
+          </div>
+          <div class="kanban-board" style="grid-template-columns:repeat(3,1fr);margin-top:var(--sp-3);">
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-col-title">Backlog</span>
+                <span class="kanban-col-count" data-sprint-count="backlog">0</span>
               </div>
-              <div class="timeline-body">
-                <div class="flex justify-between items-start" style="margin-bottom:6px;">
-                  <div>
-                    <p style="font-size:var(--text-sm);font-weight:600;color:var(--gold-3);">FASE 2 — Módulos Core</p>
-                    <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">Abril – Junio 2025</p>
-                  </div>
-                  <span class="badge badge-gold">En curso · 68%</span>
-                </div>
-                <div class="prog-track" style="margin-bottom:6px;">
-                  <div class="prog-fill prog-gold" data-w="68" style="width:68%;"></div>
-                </div>
-                <p style="font-size:var(--text-xs);color:var(--text-3);">DayOS · WealthOS · ProjectOS · SegundOS · IA integrada</p>
-              </div>
+              <div class="kanban-cards" id="sprint-backlog"></div>
             </div>
-            <!-- Fase 3 -->
-            <div class="timeline-item">
-              <div class="timeline-stem">
-                <div class="timeline-dot" style="background:rgba(217,110,50,0.35);border:1.5px solid var(--sunset-2);"></div>
-                <div class="timeline-line"></div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-col-title" style="color:var(--gold-3);">En curso</span>
+                <span class="kanban-col-count" data-sprint-count="doing" style="background:rgba(200,168,75,0.12);color:var(--gold-3);">0</span>
               </div>
-              <div class="timeline-body">
-                <div class="flex justify-between items-start" style="margin-bottom:6px;">
-                  <div>
-                    <p style="font-size:var(--text-sm);font-weight:600;color:var(--sunset);">FASE 3 — IA Avanzada</p>
-                    <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">Julio – Septiembre 2025</p>
-                  </div>
-                  <span class="badge badge-sunset">Planificado Q3</span>
-                </div>
-                <div class="prog-track" style="margin-bottom:6px;">
-                  <div class="prog-fill prog-sunset" data-w="8" style="width:8%;"></div>
-                </div>
-                <p style="font-size:var(--text-xs);color:var(--text-3);">Agentes autónomos · Predicciones · Automatizaciones · API pública</p>
-              </div>
+              <div class="kanban-cards" id="sprint-doing"></div>
             </div>
-            <!-- Fase 4 -->
-            <div class="timeline-item">
-              <div class="timeline-stem">
-                <div class="timeline-dot" style="background:rgba(52,112,184,0.25);border:1.5px solid var(--sky-2);"></div>
+            <div class="kanban-col">
+              <div class="kanban-col-header">
+                <span class="kanban-col-title" style="color:var(--emerald-2);">Completado</span>
+                <span class="kanban-col-count" data-sprint-count="done" style="background:rgba(26,92,69,0.10);color:var(--emerald-2);">0</span>
               </div>
-              <div class="timeline-body">
-                <div class="flex justify-between items-start" style="margin-bottom:6px;">
-                  <div>
-                    <p style="font-size:var(--text-sm);font-weight:600;color:var(--sky);">FASE 4 — Lanzamiento</p>
-                    <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">Octubre – Diciembre 2025</p>
-                  </div>
-                  <span class="badge badge-sky">Q4 2025</span>
-                </div>
-                <div class="prog-track" style="margin-bottom:6px;">
-                  <div class="prog-fill prog-sky" data-w="0" style="width:0%;"></div>
-                </div>
-                <p style="font-size:var(--text-xs);color:var(--text-3);">Beta pública · Onboarding · Pricing · Growth loops · V1.0</p>
-              </div>
+              <div class="kanban-cards" id="sprint-done"></div>
             </div>
           </div>
         </div>
 
-        <!-- Sprint Kanban + GitHub -->
-        <div class="g3-2">
-
-          <!-- Sprint Kanban -->
-          <div class="card card-in d2">
-            <div class="sh">
-              <div class="sh-left">
-                <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
-                <h2 class="sh-title">Sprint activo</h2>
-                <p class="sh-sub">Tareas del sprint actual</p>
-              </div>
-              <button id="btn-add-sprint-task" class="btn btn-primary btn-sm">+ Tarea</button>
+        <!-- Roadmap / Milestones -->
+        <div class="card card-in">
+          <div class="sh">
+            <div class="sh-left">
+              <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
+              <h2 class="sh-title">Roadmap</h2>
+              <p class="sh-sub">Hitos y fases del proyecto</p>
             </div>
-
-            <div class="kanban-board" style="grid-template-columns:repeat(3,1fr);">
-              <div class="kanban-col">
-                <div class="kanban-col-header">
-                  <span class="kanban-col-title">Backlog</span>
-                  <span class="kanban-col-count" data-sprint-count="backlog">0</span>
-                </div>
-                <div class="kanban-cards" id="sprint-backlog"></div>
-              </div>
-              <div class="kanban-col">
-                <div class="kanban-col-header">
-                  <span class="kanban-col-title" style="color:var(--gold-3);">En curso</span>
-                  <span class="kanban-col-count" data-sprint-count="doing" style="background:rgba(200,168,75,0.12);color:var(--gold-3);">0</span>
-                </div>
-                <div class="kanban-cards" id="sprint-doing"></div>
-              </div>
-              <div class="kanban-col">
-                <div class="kanban-col-header">
-                  <span class="kanban-col-title" style="color:var(--emerald-2);">Review / Done</span>
-                  <span class="kanban-col-count" data-sprint-count="done" style="background:rgba(26,92,69,0.10);color:var(--emerald-2);">0</span>
-                </div>
-                <div class="kanban-cards" id="sprint-done"></div>
-              </div>
-            </div>
+            <button id="btn-add-milestone" class="btn btn-glass btn-sm">+ Hito</button>
           </div>
-
-          <!-- GitHub Activity -->
-          <div class="card card-in d3">
-            <div class="sh">
-              <div class="sh-left">
-                <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
-                <h2 class="sh-title-sm">GitHub</h2>
-                <p class="sh-sub">alexos-main · últimos commits</p>
-              </div>
-              <span class="badge badge-emerald">main ✓</span>
-            </div>
-
-            <div class="commit-item">
-              <span class="commit-hash">a3f9c2b</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">feat: glassmorphism design system v2</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">hace 1h · Alex S.</p>
-              </div>
-            </div>
-            <div class="commit-item">
-              <span class="commit-hash">8e1d4a7</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">fix: backdrop-filter en Safari iOS</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">hace 4h · Alex S.</p>
-              </div>
-            </div>
-            <div class="commit-item">
-              <span class="commit-hash">2c7b9e3</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">add: timer SVG ring + session dots</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">ayer · Alex S.</p>
-              </div>
-            </div>
-            <div class="commit-item">
-              <span class="commit-hash">f4a8c11</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">refactor: SPA hash-based router</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">ayer · Alex S.</p>
-              </div>
-            </div>
-            <div class="commit-item">
-              <span class="commit-hash">9d2e571</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">add: donut chart conic-gradient</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">hace 2d · Alex S.</p>
-              </div>
-            </div>
-            <div class="commit-item">
-              <span class="commit-hash">c8f3a40</span>
-              <div style="flex:1;">
-                <p style="font-size:var(--text-xs);font-weight:500;color:var(--text-2);">chore: deps update + build config</p>
-                <p style="font-size:var(--text-10);color:var(--text-4);margin-top:1px;">hace 2d · Alex S.</p>
-              </div>
-            </div>
-
-            <button class="btn btn-glass btn-sm" style="margin-top:var(--sp-3);width:100%;">Ver historial completo →</button>
-          </div>
-        </div>
-
-        <!-- Coach IA -->
-        <div class="card card-ai card-in">
-          <div class="flex items-center gap-2" style="margin-bottom:var(--sp-4);">
-            <div style="width:8px;height:8px;border-radius:50%;background:var(--gold-2);box-shadow:0 0 0 3px rgba(200,168,75,0.22);"></div>
-            <span class="label-upper" style="color:var(--gold-3);">Coach IA · ProjectOS</span>
-          </div>
-
-          <div class="chat-messages" style="max-height:150px;margin-bottom:var(--sp-3);">
-            <div class="chat-row">
-              <div class="chat-avatar-sm" style="background:rgba(200,168,75,0.12);color:var(--gold-3);">AI</div>
-              <div class="chat-bubble ai">Sprint 14 va al 52% con 8 días restantes. Ritmo actual: ~1.8 tareas/día — llegarás al 78% para el viernes. <strong>Riesgo:</strong> "Integrar Claude API" es el mayor bloqueador para Fase 3, priorízala esta semana. <span class="ai-cursor" style="background:var(--gold-2);"></span></div>
-            </div>
-          </div>
-
-          <div class="chat-input-row">
-            <input class="input-glass chat-field" type="text" placeholder="Pregunta al coach de proyectos…" style="flex:1;" />
-            <button class="btn btn-primary btn-sm chat-send">→</button>
-          </div>
+          <div id="milestones-list" class="timeline" style="margin-top:var(--sp-3);"></div>
         </div>
 
       </section><!-- /PROJECTOS -->
