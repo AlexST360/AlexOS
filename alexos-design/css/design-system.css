@@ -1,0 +1,360 @@
+/* ============================================================
+   AlexOS Design System v2 — Variables, Tokens, Base
+   Inspiración: iOS 18 + Apple Vision Pro + Linear + Marble
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ════════════════════════════════════════
+   TOKENS DE COLOR
+   ════════════════════════════════════════ */
+:root {
+  /* ── Fondos ── */
+  --bg-base:       #F8F6F1;
+  --bg-warm:       #F4F0E8;
+  --bg-glass:      rgba(255, 253, 248, 0.74);
+  --bg-glass-2:    rgba(250, 247, 240, 0.58);
+  --bg-glass-3:    rgba(245, 241, 232, 0.45);
+
+  /* ── Oro ── */
+  --gold:          #C8A84B;
+  --gold-2:        #E8C96A;
+  --gold-3:        #A07830;
+  --gold-4:        #7A5C20;
+  --gold-glass:    rgba(200, 168, 75, 0.14);
+  --gold-glow:     rgba(200, 168, 75, 0.28);
+
+  /* ── Esmeralda ── */
+  --emerald:       #1A5C45;
+  --emerald-2:     #2E7D5E;
+  --emerald-3:     #4AAE88;
+  --emerald-4:     #8FD4B8;
+  --emerald-glass: rgba(26, 92, 69, 0.11);
+  --emerald-glow:  rgba(26, 92, 69, 0.22);
+
+  /* ── Atardecer ── */
+  --sunset:        #D96E32;
+  --sunset-2:      #F08C52;
+  --sunset-3:      #F5AB7A;
+  --sunset-4:      #FACBA8;
+  --sunset-glass:  rgba(217, 110, 50, 0.10);
+  --sunset-glow:   rgba(217, 110, 50, 0.20);
+
+  /* ── Cielo ── */
+  --sky:           #3470B8;
+  --sky-2:         #5590D8;
+  --sky-3:         #88B8EE;
+  --sky-glass:     rgba(52, 112, 184, 0.10);
+
+  /* ── Texto ── */
+  --text:          #1A1714;
+  --text-2:        #4A4440;
+  --text-3:        #8C837A;
+  --text-4:        #B8AEA8;
+  --text-5:        #D4CEC8;
+
+  /* ── Bordes ── */
+  --border-white:  rgba(255, 255, 255, 0.68);
+  --border-gold:   rgba(200, 168, 75, 0.22);
+  --border-subtle: rgba(20, 16, 10, 0.07);
+  --border-dark:   rgba(20, 16, 10, 0.12);
+
+  /* ════════════════════════
+     GLASS SYSTEM — 4 niveles
+     ════════════════════════ */
+  /* Nivel 1: Base surface */
+  --glass-1-bg:     rgba(255, 253, 248, 0.68);
+  --glass-1-blur:   blur(20px) saturate(1.8) brightness(1.01);
+  --glass-1-border: 0.5px solid rgba(255, 255, 255, 0.65);
+  --glass-1-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 2px 6px rgba(20, 16, 10, 0.05),
+    0 8px 28px rgba(20, 16, 10, 0.05);
+
+  /* Nivel 2: Elevado (cards principales) */
+  --glass-2-bg:     rgba(255, 253, 248, 0.75);
+  --glass-2-blur:   blur(28px) saturate(2) brightness(1.015);
+  --glass-2-border: 0.5px solid rgba(255, 255, 255, 0.72);
+  --glass-2-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 -1px 0 rgba(200, 168, 75, 0.06) inset,
+    0 2px 4px rgba(20, 16, 10, 0.04),
+    0 8px 24px rgba(20, 16, 10, 0.06),
+    0 24px 48px rgba(20, 16, 10, 0.04);
+
+  /* Nivel 3: Flotante (modales, dropdowns) */
+  --glass-3-bg:     rgba(255, 253, 248, 0.88);
+  --glass-3-blur:   blur(40px) saturate(2.2);
+  --glass-3-border: 0.5px solid rgba(255, 255, 255, 0.80);
+  --glass-3-shadow:
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 4px 16px rgba(20, 16, 10, 0.08),
+    0 20px 60px rgba(20, 16, 10, 0.10);
+
+  /* Nivel 4: Overlay (navbar) */
+  --glass-nav-bg:   rgba(248, 246, 241, 0.90);
+  --glass-nav-blur: blur(32px) saturate(2.2) brightness(1.02);
+
+  /* ════════════════════════
+     LAYOUT
+     ════════════════════════ */
+  --navbar-h:   56px;
+  --sidebar-w:  224px;
+  --sidebar-w-collapsed: 64px;
+
+  /* ════════════════════════
+     TIPOGRAFÍA
+     ════════════════════════ */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans:  'Inter', -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Escala */
+  --text-10:  11px;
+  --text-xs:  12px;
+  --text-sm:  14px;
+  --text-base:15px;
+  --text-md:  17px;
+  --text-lg:  21px;
+  --text-xl:  26px;
+  --text-2xl: 32px;
+  --text-3xl: 42px;
+  --text-4xl: 54px;
+  --text-5xl: 72px;
+
+  /* ════════════════════════
+     ESPACIADO (base-8)
+     ════════════════════════ */
+  --sp-1:   4px;
+  --sp-2:   8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* ════════════════════════
+     RADIOS
+     ════════════════════════ */
+  --r-xs:   6px;
+  --r-sm:   8px;
+  --r-md:   10px;
+  --r-lg:   12px;
+  --r-xl:   16px;
+  --r-2xl:  20px;
+  --r-3xl:  24px;
+  --r-full: 9999px;
+
+  /* ════════════════════════
+     TRANSICIONES
+     ════════════════════════ */
+  --t-snap:   0.1s ease;
+  --t-fast:   0.15s ease;
+  --t-base:   0.22s ease;
+  --t-slow:   0.38s ease;
+  --t-spring: 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-smooth: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ════════════════════════
+     Z-INDEX
+     ════════════════════════ */
+  --z-bg:      -1;
+  --z-base:     1;
+  --z-raised:  10;
+  --z-sticky:  50;
+  --z-sidebar: 100;
+  --z-navbar:  200;
+  --z-overlay: 300;
+  --z-toast:   400;
+}
+
+/* ════════════════════════════════════════
+   BASE HTML
+   ════════════════════════════════════════ */
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text);
+  background: var(--bg-base);
+  line-height: 1.62;
+  overflow-x: hidden;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.006em;
+}
+
+/* Fondo mármol con gradientes sutiles */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 12% 38%,  rgba(200, 168, 75,  0.07) 0%, transparent 100%),
+    radial-gradient(ellipse 60% 50% at 88% 12%,  rgba(26,  92,  69,  0.05) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 60% at 60% 88%,  rgba(217, 110, 50,  0.05) 0%, transparent 100%),
+    radial-gradient(ellipse 80% 80% at 50% 50%,  rgba(248, 246, 241, 1.00) 0%, #EDE8DF 100%);
+  pointer-events: none;
+  z-index: var(--z-bg);
+}
+
+/* ════════════════════════════════════════
+   CLASES GLASS
+   ════════════════════════════════════════ */
+.glass {
+  background: var(--glass-1-bg);
+  backdrop-filter: var(--glass-1-blur);
+  -webkit-backdrop-filter: var(--glass-1-blur);
+  border: var(--glass-1-border);
+  box-shadow: var(--glass-1-shadow);
+}
+
+.glass-2 {
+  background: var(--glass-2-bg);
+  backdrop-filter: var(--glass-2-blur);
+  -webkit-backdrop-filter: var(--glass-2-blur);
+  border: var(--glass-2-border);
+  box-shadow: var(--glass-2-shadow);
+}
+
+.glass-3 {
+  background: var(--glass-3-bg);
+  backdrop-filter: var(--glass-3-blur);
+  -webkit-backdrop-filter: var(--glass-3-blur);
+  border: var(--glass-3-border);
+  box-shadow: var(--glass-3-shadow);
+}
+
+/* Highlight de luz (::after en cards) */
+.glass-highlight::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 8px; right: 8px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.85) 30%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.85) 70%, transparent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ════════════════════════════════════════
+   FRANJA ATARDECER
+   ════════════════════════════════════════ */
+.sunset-stripe {
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--emerald-2) 0%,
+    var(--gold)      25%,
+    var(--sunset-2)  50%,
+    var(--gold-2)    75%,
+    var(--emerald-2) 100%);
+  opacity: 0.65;
+  border-radius: var(--r-full);
+}
+
+.sunset-stripe-animated {
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--emerald-2),
+    var(--gold),
+    var(--sunset-2),
+    var(--gold-2),
+    var(--emerald-2),
+    var(--gold),
+    var(--sunset-2));
+  background-size: 300% 100%;
+  opacity: 0.65;
+  border-radius: var(--r-full);
+  animation: stripe-move 8s linear infinite;
+}
+
+@keyframes stripe-move {
+  from { background-position: 0% 50%; }
+  to   { background-position: 300% 50%; }
+}
+
+/* ════════════════════════════════════════
+   TIPOGRAFÍA UTILITARIA
+   ════════════════════════════════════════ */
+.font-serif  { font-family: var(--font-serif) !important; }
+.font-sans   { font-family: var(--font-sans) !important; }
+.font-mono   { font-family: var(--font-mono) !important; }
+
+.text-gold    { color: var(--gold); }
+.text-gold-3  { color: var(--gold-3); }
+.text-emerald { color: var(--emerald-2); }
+.text-sunset  { color: var(--sunset-2); }
+.text-muted   { color: var(--text-3); }
+.text-faint   { color: var(--text-4); }
+.text-tiny    { font-size: var(--text-xs); }
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, var(--gold-4) 0%, var(--gold) 40%, var(--gold-2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-emerald-gradient {
+  background: linear-gradient(135deg, var(--emerald), var(--emerald-2), var(--emerald-3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Label uppercase pequeño */
+.label-upper {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ════════════════════════════════════════
+   UTILIDADES
+   ════════════════════════════════════════ */
+.flex            { display: flex; }
+.flex-col        { flex-direction: column; }
+.items-center    { align-items: center; }
+.items-end       { align-items: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-center  { justify-content: center; }
+.gap-1  { gap: var(--sp-1); }
+.gap-2  { gap: var(--sp-2); }
+.gap-3  { gap: var(--sp-3); }
+.gap-4  { gap: var(--sp-4); }
+.gap-5  { gap: var(--sp-5); }
+.gap-6  { gap: var(--sp-6); }
+.w-full { width: 100%; }
+.flex-1 { flex: 1; }
+.relative { position: relative; }
+.overflow-hidden { overflow: hidden; }
+
+/* ════════════════════════════════════════
+   SCROLLBAR
+   ════════════════════════════════════════ */
+::-webkit-scrollbar            { width: 4px; height: 4px; }
+::-webkit-scrollbar-track      { background: transparent; }
+::-webkit-scrollbar-thumb      { background: rgba(200, 168, 75, 0.18); border-radius: var(--r-full); }
+::-webkit-scrollbar-thumb:hover{ background: rgba(200, 168, 75, 0.38); }
+
+::selection { background: rgba(200, 168, 75, 0.22); color: var(--text); }
+
+:focus-visible {
+  outline: 2px solid rgba(200, 168, 75, 0.55);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}

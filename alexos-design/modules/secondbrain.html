@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Second Brain — AlexOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/design-system.css" />
+  <link rel="stylesheet" href="../css/animations.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <style>
+    body { padding: var(--sp-6); }
+  </style>
+</head>
+<body>
+  <div style="position:fixed;width:500px;height:500px;border-radius:50%;filter:blur(80px);background:radial-gradient(circle,rgba(200,168,75,0.10),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0;"></div>
+
+  <div style="max-width:900px;margin:0 auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:var(--sp-6);">
+
+    <div class="card glass-depth">
+      <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
+      <h1 class="font-serif" style="font-size:var(--text-3xl);font-weight:400;">
+        Second Brain <span style="color:var(--gold);">·</span> Conocimiento
+      </h1>
+      <p style="color:var(--text-3);font-size:var(--text-sm);margin-top:4px;">247 notas · 18 libros · 64 ideas capturadas</p>
+    </div>
+
+    <div class="grid-4">
+      <div class="card metric-card glass-depth card-cascade animate-delay-1">
+        <div class="metric-label">Libros leídos</div>
+        <div class="metric-value font-serif" style="color:var(--gold);">18</div>
+        <div class="metric-sub">objetivo: 24 en 2025</div>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-2">
+        <div class="metric-label">Ideas</div>
+        <div class="metric-value font-serif">64</div>
+        <div class="metric-sub">este trimestre</div>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-3">
+        <div class="metric-label">Notas activas</div>
+        <div class="metric-value font-serif" style="color:var(--emerald-2);">247</div>
+        <div class="metric-sub">+12 esta semana</div>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-4">
+        <div class="metric-label">Conexiones</div>
+        <div class="metric-value font-serif" style="color:var(--sunset);">892</div>
+        <div class="metric-sub">entre notas</div>
+      </div>
+    </div>
+
+    <!-- Chat Second Brain -->
+    <div class="card card-ai glass-depth">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);">
+        <span style="font-size:20px;">🧠</span>
+        <span class="font-serif" style="font-size:var(--text-lg);">Preguntar al Brain</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:var(--sp-3);">
+        <div class="chat-bubble ai">
+          Hola, Alex. Tengo acceso a todas tus notas e ideas. ¿Sobre qué tema quieres explorar?
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input class="input-glass" type="text" placeholder="Pregunta a tu Second Brain…" style="flex:1;" />
+        <button class="btn btn-primary btn-sm">→</button>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-4);font-size:var(--text-xs);">
+      Vista standalone — Para la versión completa usa <a href="../app.html" style="color:var(--gold);">app.html</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WealthOS — AlexOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/design-system.css" />
+  <link rel="stylesheet" href="../css/animations.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <style>
+    body { padding: var(--sp-6); }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="bg-orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(26,92,69,0.10),transparent 70%);top:-100px;right:-150px;z-index:0;"></div>
+
+  <div style="max-width:900px;margin:0 auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:var(--sp-6);">
+
+    <div class="card glass-depth">
+      <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
+      <h1 class="font-serif" style="font-size:var(--text-3xl);font-weight:400;">
+        WealthOS <span style="color:var(--gold);">·</span> Finanzas
+      </h1>
+      <p style="color:var(--text-3);font-size:var(--text-sm);margin-top:4px;">Resumen financiero · Abril 2025</p>
+    </div>
+
+    <div class="grid-4">
+      <div class="card metric-card glass-depth card-cascade animate-delay-1">
+        <div class="metric-label">Patrimonio neto</div>
+        <div class="metric-value" style="color:var(--gold);">$847K</div>
+        <span class="metric-change up">+12.4%</span>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-2">
+        <div class="metric-label">Inversiones</div>
+        <div class="metric-value" style="color:var(--emerald-2);">$523K</div>
+        <span class="metric-change up">+8.7% YTD</span>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-3">
+        <div class="metric-label">Ingresos / mes</div>
+        <div class="metric-value">$18.5K</div>
+        <span class="metric-change up">+22%</span>
+      </div>
+      <div class="card metric-card glass-depth card-cascade animate-delay-4">
+        <div class="metric-label">Tasa de ahorro</div>
+        <div class="metric-value" style="color:var(--sunset);">68%</div>
+        <span class="metric-change down">–3% objetivo</span>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-4);font-size:var(--text-xs);">
+      Vista standalone — Para la versión completa usa <a href="../app.html" style="color:var(--gold);">app.html</a>
+    </p>
+  </div>
+</body>
+</html>

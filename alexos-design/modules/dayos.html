@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DayOS — AlexOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/design-system.css" />
+  <link rel="stylesheet" href="../css/animations.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <style>
+    body { padding: var(--sp-6); }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <!-- Orb de fondo -->
+  <div class="bg-orb" style="width:600px;height:600px;background:radial-gradient(circle,rgba(200,168,75,0.12),transparent 70%);top:-100px;left:-150px;z-index:0;"></div>
+
+  <div style="max-width:900px;margin:0 auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:var(--sp-6);">
+
+    <!-- Header del día -->
+    <div class="card glass-depth">
+      <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
+      <h1 class="font-serif" style="font-size:var(--text-3xl);font-weight:400;">
+        Buenos días, <span class="text-gold-gradient">Alex</span>
+      </h1>
+      <p style="color:var(--text-3);font-size:var(--text-sm);margin-top:4px;">
+        Lunes, 21 de abril · DayOS
+      </p>
+
+      <div style="display:flex;gap:var(--sp-3);margin-top:var(--sp-5);">
+        <button class="btn-energy alta active" data-energy="alta">
+          <span class="energy-icon">⚡</span>
+          <span class="energy-label">ALTA</span>
+        </button>
+        <button class="btn-energy media" data-energy="media">
+          <span class="energy-icon">◎</span>
+          <span class="energy-label">MEDIA</span>
+        </button>
+        <button class="btn-energy baja" data-energy="baja">
+          <span class="energy-icon">◌</span>
+          <span class="energy-label">BAJA</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Prioridades -->
+    <div class="card glass-depth">
+      <h2 class="section-title" style="margin-bottom:var(--sp-5);">Mis 3 Prioridades</h2>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
+        <div class="input-priority-wrap">
+          <div class="priority-num">I</div>
+          <input class="input-glass" type="text" placeholder="Tarea de mayor impacto…" />
+        </div>
+        <div class="input-priority-wrap">
+          <div class="priority-num">II</div>
+          <input class="input-glass" type="text" placeholder="Segunda prioridad…" />
+        </div>
+        <div class="input-priority-wrap">
+          <div class="priority-num">III</div>
+          <input class="input-glass" type="text" placeholder="Tercera prioridad…" />
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg" style="width:100%;margin-top:var(--sp-5);">✦ Empezar ahora</button>
+    </div>
+
+    <p style="text-align:center;color:var(--text-4);font-size:var(--text-xs);">
+      Vista standalone — Para la versión completa usa <a href="../app.html" style="color:var(--gold);">app.html</a>
+    </p>
+  </div>
+
+  <script>
+    document.querySelectorAll('.btn-energy').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-energy').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

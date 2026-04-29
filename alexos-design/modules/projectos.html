@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProjectOS — AlexOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/design-system.css" />
+  <link rel="stylesheet" href="../css/animations.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <style>
+    body { padding: var(--sp-6); }
+  </style>
+</head>
+<body>
+  <div style="position:fixed;width:500px;height:500px;border-radius:50%;filter:blur(80px);background:radial-gradient(circle,rgba(58,120,200,0.08),transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none;z-index:0;"></div>
+
+  <div style="max-width:900px;margin:0 auto;position:relative;z-index:1;display:flex;flex-direction:column;gap:var(--sp-6);">
+
+    <div class="card glass-depth">
+      <div class="sunset-stripe-animated" style="margin-bottom:var(--sp-5);"></div>
+      <h1 class="font-serif" style="font-size:var(--text-3xl);font-weight:400;">
+        ProjectOS <span style="color:var(--gold);">·</span> Proyectos
+      </h1>
+      <p style="color:var(--text-3);font-size:var(--text-sm);margin-top:4px;">3 proyectos activos · Sprint 14</p>
+    </div>
+
+    <!-- Roadmap simplificado -->
+    <div class="card glass-depth">
+      <h2 class="section-title" style="margin-bottom:var(--sp-5);">Roadmap 2025</h2>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-4);">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:var(--text-sm);font-weight:500;color:var(--emerald-2);">Fase 1 — Fundamentos</span>
+            <span class="badge badge-emerald">✓ Completado</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill emerald" style="width:100%;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:var(--text-sm);font-weight:500;color:var(--gold-3);">Fase 2 — Módulos Core</span>
+            <span class="badge badge-gold">68%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill gold" style="width:68%;"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:var(--text-sm);font-weight:500;color:var(--sunset);">Fase 3 — IA Avanzada</span>
+            <span class="badge badge-sunset">Q3 2025</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill sunset" style="width:12%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-4);font-size:var(--text-xs);">
+      Vista standalone — Para la versión completa usa <a href="../app.html" style="color:var(--gold);">app.html</a>
+    </p>
+  </div>
+</body>
+</html>
