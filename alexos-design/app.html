@@ -700,6 +700,83 @@
           <div id="cashflow-bars" class="flex flex-col gap-4" style="margin-top:var(--sp-3);"></div>
         </div>
 
+        <!-- Mercados en vivo -->
+        <div class="card card-in">
+          <div class="sh">
+            <div class="sh-left">
+              <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
+              <h2 class="sh-title">Mercados en vivo</h2>
+              <p class="sh-sub" id="markets-last-updated">Actualizando…</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="markets-live-badge" style="display:none;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0.06em;color:var(--emerald-3);padding:3px 9px;border-radius:var(--r-full);background:rgba(74,174,136,0.10);border:0.5px solid rgba(74,174,136,0.20);">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--emerald-3);animation:gold-pulse 2s ease-in-out infinite;display:inline-block;"></span>
+                LIVE
+              </span>
+              <button id="btn-refresh-markets" class="btn btn-glass btn-sm" style="font-size:10px;">↻ Refrescar</button>
+            </div>
+          </div>
+
+          <!-- Cards crypto -->
+          <div class="g3" style="margin-top:var(--sp-4);">
+            <!-- BTC -->
+            <div class="card card-interactive card-in" id="live-btc-card">
+              <div class="flex justify-between items-start" style="margin-bottom:var(--sp-3);">
+                <div>
+                  <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--text-3);">Bitcoin</p>
+                  <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">BTC · USD</p>
+                </div>
+                <span style="font-size:18px;">₿</span>
+              </div>
+              <p class="font-serif" id="live-btc-usd" style="font-size:var(--text-2xl);font-weight:300;color:var(--text);margin-bottom:3px;">—</p>
+              <p id="live-btc-clp" style="font-size:var(--text-xs);color:var(--text-4);font-family:var(--font-mono);margin-bottom:var(--sp-3);">— CLP</p>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span id="live-btc-change" class="kpi-change flat" style="font-size:10px;">— 24h</span>
+                <svg id="live-btc-spark" width="64" height="28" viewBox="0 0 64 28" style="overflow:visible;"></svg>
+              </div>
+            </div>
+
+            <!-- ETH -->
+            <div class="card card-interactive card-in" id="live-eth-card">
+              <div class="flex justify-between items-start" style="margin-bottom:var(--sp-3);">
+                <div>
+                  <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--text-3);">Ethereum</p>
+                  <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">ETH · USD</p>
+                </div>
+                <span style="font-size:18px;">⟠</span>
+              </div>
+              <p class="font-serif" id="live-eth-usd" style="font-size:var(--text-2xl);font-weight:300;color:var(--text);margin-bottom:3px;">—</p>
+              <p id="live-eth-clp" style="font-size:var(--text-xs);color:var(--text-4);font-family:var(--font-mono);margin-bottom:var(--sp-3);">— CLP</p>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span id="live-eth-change" class="kpi-change flat" style="font-size:10px;">— 24h</span>
+                <svg id="live-eth-spark" width="64" height="28" viewBox="0 0 64 28" style="overflow:visible;"></svg>
+              </div>
+            </div>
+
+            <!-- USD/CLP -->
+            <div class="card card-interactive card-in" id="live-forex-card">
+              <div class="flex justify-between items-start" style="margin-bottom:var(--sp-3);">
+                <div>
+                  <p style="font-size:12px;font-weight:700;letter-spacing:0.04em;color:var(--text-3);">Tipo de cambio</p>
+                  <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">USD · CLP</p>
+                </div>
+                <span style="font-size:18px;">💱</span>
+              </div>
+              <p class="font-serif" id="live-usdclp" style="font-size:var(--text-2xl);font-weight:300;color:var(--text);margin-bottom:3px;">—</p>
+              <p style="font-size:var(--text-xs);color:var(--text-4);margin-bottom:var(--sp-3);">pesos por dólar</p>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">1 BTC = <span id="live-btc-clp-mini">—</span> CLP</p>
+                <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">1 ETH = <span id="live-eth-clp-mini">—</span> CLP</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error state -->
+          <div id="markets-error" style="display:none;margin-top:var(--sp-3);padding:var(--sp-3);border-radius:var(--r-lg);background:rgba(217,110,50,0.07);border:0.5px solid rgba(217,110,50,0.18);">
+            <p style="font-size:var(--text-xs);color:var(--sunset);" id="markets-error-msg">Error al conectar con los mercados.</p>
+          </div>
+        </div>
+
       </section><!-- /WEALTHOS -->
 
 
@@ -816,6 +893,25 @@
             <button id="btn-add-milestone" class="btn btn-glass btn-sm">+ Hito</button>
           </div>
           <div id="milestones-list" class="timeline" style="margin-top:var(--sp-3);"></div>
+        </div>
+
+        <!-- GitHub Live -->
+        <div class="card card-in">
+          <div class="sh">
+            <div class="sh-left">
+              <div class="sunset-stripe" style="width:36px;margin-bottom:6px;"></div>
+              <h2 class="sh-title">GitHub</h2>
+              <p class="sh-sub" id="github-widget-sub">AlexST360 · repositorios públicos</p>
+            </div>
+            <span id="github-live-badge" style="display:none;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0.06em;color:var(--emerald-3);padding:3px 9px;border-radius:var(--r-full);background:rgba(74,174,136,0.10);border:0.5px solid rgba(74,174,136,0.20);">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--emerald-3);display:inline-block;"></span>
+              LIVE
+            </span>
+          </div>
+          <div id="github-repos-list" style="margin-top:var(--sp-3);display:flex;flex-direction:column;gap:2px;"></div>
+          <div id="github-error" style="display:none;margin-top:var(--sp-3);padding:var(--sp-3);border-radius:var(--r-lg);background:rgba(217,110,50,0.07);border:0.5px solid rgba(217,110,50,0.18);">
+            <p style="font-size:var(--text-xs);color:var(--sunset);" id="github-error-msg">Error al conectar con GitHub.</p>
+          </div>
         </div>
 
       </section><!-- /PROJECTOS -->
@@ -962,6 +1058,11 @@
 
 <script src="js/store.js"></script>
 <script src="js/pdfstore.js"></script>
+<script src="js/services/apiCache.js"></script>
+<script src="js/services/cryptoService.js"></script>
+<script src="js/services/marketService.js"></script>
+<script src="js/services/githubService.js"></script>
+<script src="js/services/liveOS.js"></script>
 <script src="js/router.js"></script>
 <script src="js/app.js"></script>
 </body>

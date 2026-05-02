@@ -155,6 +155,196 @@ document.addEventListener('DOMContentLoaded', () => {
     95:'⛈️', 96:'⛈️', 99:'⛈️'
   };
 
+  /* ════════════════════════════════════════════════════════
+     LIVEOS — Mercados en vivo + GitHub
+     ════════════════════════════════════════════════════════ */
+
+  /* SVG sparkline: recibe array de { price } y dibuja polilinea */
+  function _drawSparkline(svgEl, points, isUp) {
+    if (!svgEl || points.length < 2) return;
+    const w = 64, h = 28;
+    const prices = points.map(p => p.price).filter(Boolean);
+    if (prices.length < 2) return;
+
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const range = max - min || 1;
+
+    const coords = prices.map((p, i) => {
+      const x = (i / (prices.length - 1)) * w;
+      const y = h - ((p - min) / range) * (h - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    const color = isUp ? '#4AAE88' : '#D96E32';
+    svgEl.innerHTML = `
+      <polyline
+        points="${coords.join(' ')}"
+        fill="none"
+        stroke="${color}"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.85"
+      />
+      <circle cx="${coords[coords.length-1].split(',')[0]}" cy="${coords[coords.length-1].split(',')[1]}"
+              r="2.5" fill="${color}" />
+    `;
+  }
+
+  function _fmtCLP(n) {
+    if (!n) return '—';
+    return '$' + Math.round(n).toLocaleString('es-CL');
+  }
+
+  function _fmtUSD(n) {
+    if (!n) return '—';
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
+  function _ageStr(date) {
+    if (!date) return '';
+    const sec = Math.round((Date.now() - date.getTime()) / 1000);
+    if (sec < 60)   return `hace ${sec}s`;
+    if (sec < 3600) return `hace ${Math.floor(sec/60)}min`;
+    return `hace ${Math.floor(sec/3600)}h`;
+  }
+
+  function renderLiveMarkets(cryptoPayload, marketPayload) {
+    const badge   = document.getElementById('markets-live-badge');
+    const subEl   = document.getElementById('markets-last-updated');
+    const errEl   = document.getElementById('markets-error');
+    const errMsg  = document.getElementById('markets-error-msg');
+    const hasError = cryptoPayload?.error || marketPayload?.error;
+
+    if (badge) badge.style.display = hasError ? 'none' : 'flex';
+    if (errEl) errEl.style.display = hasError ? 'block' : 'none';
+    if (hasError && errMsg) errMsg.textContent = `Error: ${cryptoPayload?.error || marketPayload?.error}. Mostrando último dato conocido.`;
+
+    const crypto = cryptoPayload;
+    const market = marketPayload;
+
+    if (!crypto?.bitcoin) return;
+
+    /* BTC */
+    const btcUp = (crypto.bitcoin.change24h ?? 0) >= 0;
+    const btcEl = document.getElementById('live-btc-usd');
+    const btcClpEl = document.getElementById('live-btc-clp');
+    const btcChEl  = document.getElementById('live-btc-change');
+    if (btcEl)    btcEl.textContent    = _fmtUSD(crypto.bitcoin.usd);
+    if (btcClpEl) btcClpEl.textContent = market?.btcClp ? _fmtCLP(market.btcClp) + ' CLP' : '— CLP';
+    if (btcChEl) {
+      const ch = crypto.bitcoin.change24h;
+      btcChEl.textContent  = ch != null ? `${ch >= 0 ? '↑' : '↓'} ${Math.abs(ch).toFixed(2)}% 24h` : '— 24h';
+      btcChEl.className    = `kpi-change ${ch >= 0 ? 'up' : 'down'}`;
+    }
+    _drawSparkline(document.getElementById('live-btc-spark'), crypto.history?.bitcoin || [], btcUp);
+
+    /* ETH */
+    const ethUp = (crypto.ethereum.change24h ?? 0) >= 0;
+    const ethEl   = document.getElementById('live-eth-usd');
+    const ethClpEl= document.getElementById('live-eth-clp');
+    const ethChEl = document.getElementById('live-eth-change');
+    if (ethEl)    ethEl.textContent    = _fmtUSD(crypto.ethereum.usd);
+    if (ethClpEl) ethClpEl.textContent = market?.ethClp ? _fmtCLP(market.ethClp) + ' CLP' : '— CLP';
+    if (ethChEl) {
+      const ch = crypto.ethereum.change24h;
+      ethChEl.textContent = ch != null ? `${ch >= 0 ? '↑' : '↓'} ${Math.abs(ch).toFixed(2)}% 24h` : '— 24h';
+      ethChEl.className   = `kpi-change ${ch >= 0 ? 'up' : 'down'}`;
+    }
+    _drawSparkline(document.getElementById('live-eth-spark'), crypto.history?.ethereum || [], ethUp);
+
+    /* Forex */
+    const fxEl  = document.getElementById('live-usdclp');
+    if (fxEl && market?.usdClp) fxEl.textContent = _fmtCLP(market.usdClp);
+
+    const btcMini = document.getElementById('live-btc-clp-mini');
+    const ethMini = document.getElementById('live-eth-clp-mini');
+    if (btcMini && market?.btcClp) btcMini.textContent = Math.round(market.btcClp).toLocaleString('es-CL');
+    if (ethMini && market?.ethClp) ethMini.textContent = Math.round(market.ethClp).toLocaleString('es-CL');
+
+    if (subEl && crypto.lastUpdated) subEl.textContent = `Actualizado ${_ageStr(crypto.lastUpdated)}`;
+  }
+
+  function renderGitHubRepos(payload) {
+    const list   = document.getElementById('github-repos-list');
+    const badge  = document.getElementById('github-live-badge');
+    const sub    = document.getElementById('github-widget-sub');
+    const errEl  = document.getElementById('github-error');
+    const errMsg = document.getElementById('github-error-msg');
+    if (!list) return;
+
+    if (payload.error && !payload.repos) {
+      if (errEl) errEl.style.display = 'block';
+      if (errMsg) errMsg.textContent = `No se pudo conectar con GitHub: ${payload.error}`;
+      return;
+    }
+
+    if (errEl) errEl.style.display = 'none';
+    if (badge) badge.style.display = 'flex';
+
+    const LANG_COLOR = {
+      JavaScript:'#F7DF1E', TypeScript:'#3178C6', Python:'#3572A5',
+      CSS:'#563D7C', HTML:'#E34C26', Go:'#00ADD8', Rust:'#DEA584',
+    };
+
+    list.innerHTML = '';
+    (payload.repos || []).forEach(repo => {
+      const langColor = LANG_COLOR[repo.language] || 'var(--text-4)';
+      const ago = repo.updatedAt ? Store.relDate(new Date(repo.updatedAt).getTime()) : '—';
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--r-lg);transition:background var(--t-base);cursor:pointer;';
+      row.innerHTML = `
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">
+            <p style="font-size:var(--text-xs);font-weight:600;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${repo.name}</p>
+            ${repo.language ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;color:var(--text-4);font-family:var(--font-mono);flex-shrink:0;"><span style="width:7px;height:7px;border-radius:50%;background:${langColor};display:inline-block;"></span>${repo.language}</span>` : ''}
+          </div>
+          ${repo.description ? `<p style="font-size:10px;color:var(--text-4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${repo.description}</p>` : ''}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <p style="font-size:9px;color:var(--text-4);font-family:var(--font-mono);">${ago}</p>
+          ${repo.stars > 0 ? `<p style="font-size:9px;color:var(--gold-3);">★ ${repo.stars}</p>` : ''}
+        </div>
+      `;
+      row.addEventListener('mouseenter', () => row.style.background = 'rgba(200,168,75,0.05)');
+      row.addEventListener('mouseleave', () => row.style.background = '');
+      row.addEventListener('click', () => window.open(repo.url, '_blank'));
+      list.appendChild(row);
+    });
+
+    if (sub && payload.repos) {
+      sub.textContent = `AlexST360 · ${payload.repos.length} repos · ${_ageStr(payload.lastUpdated)}`;
+    }
+  }
+
+  /* Caché local para cruzar crypto + market en el render */
+  let _latestCrypto = null;
+  let _latestMarket = null;
+
+  function initLiveOS() {
+    document.getElementById('btn-refresh-markets')?.addEventListener('click', () => {
+      LiveOS.refresh('crypto');
+      LiveOS.refresh('market');
+      Toast.show('Actualizando mercados…', 'info', 2000);
+    });
+
+    LiveOS.startPolling({
+      onCrypto: payload => {
+        _latestCrypto = payload;
+        renderLiveMarkets(_latestCrypto, _latestMarket);
+      },
+      onMarket: payload => {
+        _latestMarket = payload;
+        renderLiveMarkets(_latestCrypto, _latestMarket);
+      },
+      onGithub: payload => {
+        renderGitHubRepos(payload);
+      },
+    });
+  }
+
   function initWeather() {
     const widget  = document.getElementById('navbar-weather');
     const iconEl  = document.getElementById('weather-icon');
@@ -3282,6 +3472,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initModalConfirm();
   initClock();
   initWeather();
+  initLiveOS();
   updateGreeting();
   setInterval(updateGreeting, 60000); // actualizar cada minuto
   initToggles();
