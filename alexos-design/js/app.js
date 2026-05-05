@@ -671,14 +671,35 @@ document.addEventListener('DOMContentLoaded', () => {
         el.appendChild(emp);
       }
 
+      // Drag-over / drop on the column container
+      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+      el.addEventListener('drop', e => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        try {
+          const { id, fromCol } = JSON.parse(e.dataTransfer.getData('text/plain'));
+          moveKanbanTaskTo(id, fromCol, col);
+        } catch {}
+      });
+
       items.forEach(task => {
         const card = document.createElement('div');
         card.className = 'kanban-card card-in';
         card.dataset.id  = task.id;
         card.dataset.col = col;
+        card.draggable = true;
 
         card.innerHTML = buildKanbanCard(task, col);
         el.appendChild(card);
+
+        // Drag events
+        card.addEventListener('dragstart', e => {
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', JSON.stringify({ id: task.id, fromCol: col }));
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
 
         // Acciones en la card
         card.querySelector('.kc-move')?.addEventListener('click', e => {
@@ -823,21 +844,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function moveKanbanTask(id, fromCol) {
     const NEXT = { todo:'doing', doing:'done', done:'todo' };
-    const toCol = NEXT[fromCol];
-    const now   = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+    moveKanbanTaskTo(id, fromCol, NEXT[fromCol]);
+  }
 
+  function moveKanbanTaskTo(id, fromCol, toCol) {
+    if (fromCol === toCol) return;
+    const now = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
     Store.update('dayos', d => {
-      const idx  = d.kanban[fromCol].findIndex(t => t.id === id);
+      const idx = d.kanban[fromCol].findIndex(t => t.id === id);
       if (idx < 0) return d;
       const [task] = d.kanban[fromCol].splice(idx, 1);
       if (toCol === 'done') task.doneAt = now;
       d.kanban[toCol].unshift(task);
       return d;
     });
-
     renderKanban();
     const labels = { todo:'Por hacer', doing:'En progreso', done:'Completado' };
-    Toast.show(`Tarea movida a "${labels[toCol]}"`);
+    Toast.show(`→ ${labels[toCol]}`);
   }
 
   function deleteKanbanTask(id, col) {
@@ -963,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
      DAYOS — AGENDA MULTI-DÍA
      ════════════════════════════════════════════════════════ */
   let agendaSelectedDate = Store.today();
+  let calendarViewDate   = new Date();
 
   const AGENDA_COLORS = [
     { label:'Foco · Trabajo profundo', value:'var(--emerald-2)', badge:'emerald', badgeLabel:'Foco' },
@@ -972,7 +996,91 @@ document.addEventListener('DOMContentLoaded', () => {
     { label:'Pausa / Personal',        value:'rgba(20,16,10,0.10)', badge:'neutral', badgeLabel:'Pausa' },
   ];
 
+  function renderCalendar() {
+    const container = document.getElementById('agenda-calendar');
+    if (!container) return;
+
+    const year  = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    const today = Store.today();
+    const data  = Store.load('dayos');
+    const agenda = data.agenda || {};
+
+    const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const DAY_NAMES   = ['L','M','X','J','V','S','D'];
+
+    // First day of month (Mon=0 … Sun=6)
+    const firstDow = (new Date(year, month, 1).getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // Previous month fill
+    const prevDays = new Date(year, month, 0).getDate();
+
+    const pad = n => String(n).padStart(2,'0');
+    const fmt = (y, m, d) => `${y}-${pad(m+1)}-${pad(d)}`;
+
+    let cells = '';
+    // Leading empty cells from previous month
+    for (let i = firstDow - 1; i >= 0; i--) {
+      const d = prevDays - i;
+      const dateStr = fmt(month === 0 ? year-1 : year, month === 0 ? 11 : month-1, d);
+      const dot = (agenda[dateStr]||[]).length > 0 ? '<span class="cal-dot"></span>' : '';
+      cells += `<div class="cal-day cal-other-month" data-date="${dateStr}"><span class="cal-day-num">${d}</span>${dot}</div>`;
+    }
+    // Current month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = fmt(year, month, d);
+      const isToday    = dateStr === today;
+      const isSelected = dateStr === agendaSelectedDate;
+      const dot = (agenda[dateStr]||[]).length > 0 ? '<span class="cal-dot"></span>' : '';
+      cells += `<div class="cal-day${isToday?' cal-today':''}${isSelected?' cal-selected':''}" data-date="${dateStr}"><span class="cal-day-num">${d}</span>${dot}</div>`;
+    }
+    // Trailing cells to complete grid
+    const total = firstDow + daysInMonth;
+    const trailing = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let d = 1; d <= trailing; d++) {
+      const dateStr = fmt(month === 11 ? year+1 : year, month === 11 ? 0 : month+1, d);
+      const dot = (agenda[dateStr]||[]).length > 0 ? '<span class="cal-dot"></span>' : '';
+      cells += `<div class="cal-day cal-other-month" data-date="${dateStr}"><span class="cal-day-num">${d}</span>${dot}</div>`;
+    }
+
+    container.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <button id="cal-prev" class="btn-kc" style="width:26px;height:26px;font-size:14px;">‹</button>
+        <span style="font-size:12px;font-weight:600;color:var(--text-2);">${MONTH_NAMES[month]} ${year}</span>
+        <button id="cal-next" class="btn-kc" style="width:26px;height:26px;font-size:14px;">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:4px;">
+        ${DAY_NAMES.map(d => `<div style="text-align:center;font-size:9px;color:var(--text-5);font-family:var(--font-mono);font-weight:600;padding:2px 0;">${d}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;">
+        ${cells}
+      </div>
+    `;
+
+    container.querySelector('#cal-prev')?.addEventListener('click', () => {
+      calendarViewDate = new Date(year, month - 1, 1);
+      renderCalendar();
+    });
+    container.querySelector('#cal-next')?.addEventListener('click', () => {
+      calendarViewDate = new Date(year, month + 1, 1);
+      renderCalendar();
+    });
+    container.querySelectorAll('.cal-day').forEach(el => {
+      el.addEventListener('click', () => {
+        agendaSelectedDate = el.dataset.date;
+        // Sync calendar view month to selected date
+        const [y, m] = agendaSelectedDate.split('-').map(Number);
+        calendarViewDate = new Date(y, m - 1, 1);
+        renderCalendar();
+        renderAgendaBlocks(agendaSelectedDate);
+        updateAgendaSubtitle();
+        renderWeekTabs();
+      });
+    });
+  }
+
   function initAgenda() {
+    renderCalendar();
     renderWeekTabs();
     renderAgendaBlocks(agendaSelectedDate);
     updateAgendaSubtitle();
@@ -982,6 +1090,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('agenda-next-week')?.addEventListener('click', () => navigateAgendaWeek(7));
     document.getElementById('agenda-today-btn')?.addEventListener('click', () => {
       agendaSelectedDate = Store.today();
+      calendarViewDate   = new Date();
+      renderCalendar();
       renderWeekTabs();
       renderAgendaBlocks(agendaSelectedDate);
       updateAgendaSubtitle();
@@ -1142,6 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         renderAgendaBlocks(dateKey);
         renderWeekTabs();
+        renderCalendar();
         if (dateKey === Store.today()) updateNextEventStat();
       });
 
@@ -1209,6 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderAgendaBlocks(agendaSelectedDate);
         renderWeekTabs();
+        renderCalendar();
         if (agendaSelectedDate === Store.today()) updateNextEventStat();
         Toast.show('Bloque agregado ✓');
       }
@@ -1694,10 +1806,15 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
+  const EXPENSE_CAT_COLORS = ['#2E7D5E','#3470B8','#C8A84B','#D96E32','#7C5CBF','#C84888','#1E8C96','#5C7A2E'];
+
   function renderCashFlow() {
     const data    = Store.load('wealthos');
-    const income  = data.monthlyIncome  || 0;
-    const expense = data.monthlyExpense || 0;
+    const income  = data.monthlyIncome || 0;
+    const cats    = data.expenseCategories || [];
+    const expense = cats.length > 0
+      ? cats.reduce((s, c) => s + (c.amount || 0), 0)
+      : (data.monthlyExpense || 0);
     const net     = income - expense;
     const bars    = document.getElementById('cashflow-bars');
     if (!bars) return;
@@ -1709,26 +1826,166 @@ document.addEventListener('DOMContentLoaded', () => {
           <span style="font-size:var(--text-sm);font-weight:600;color:${color};">${fmt$(value)}</span>
         </div>
         <div class="prog-track" style="height:8px;border-radius:6px;">
-          <div style="width:${Math.max(0, Math.min(widthPct, 100)).toFixed(1)}%;height:100%;border-radius:6px;transition:width 0.6s ease;${gradient ? `background:linear-gradient(90deg,${color}aa,${color});` : `background:${color};`}"></div>
+          <div style="width:${Math.max(0, Math.min(widthPct, 100)).toFixed(1)}%;height:100%;border-radius:6px;transition:width 0.6s ease;${gradient ? `background:linear-gradient(90deg,${color}88,${color});` : `background:${color};`}"></div>
         </div>
       </div>
     `;
 
+    const catRows = cats.map((cat, i) => {
+      const color  = EXPENSE_CAT_COLORS[i % EXPENSE_CAT_COLORS.length];
+      const pct    = expense > 0 ? (cat.amount / expense * 100) : 0;
+      const incPct = income  > 0 ? (cat.amount / income  * 100) : 0;
+      return `
+        <div class="expense-cat-row" data-cat-id="${cat.id}" style="display:grid;grid-template-columns:26px 1fr 70px;gap:10px;align-items:center;">
+          <span style="font-size:17px;text-align:center;line-height:1;">${cat.emoji || '💰'}</span>
+          <div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:12px;font-weight:500;color:var(--text-2);">${cat.name}</span>
+              <span style="font-size:10px;color:var(--text-4);font-family:var(--font-mono);">${pct.toFixed(0)}% del gasto</span>
+            </div>
+            <div class="prog-track" style="height:5px;border-radius:4px;">
+              <div style="width:${incPct.toFixed(1)}%;height:100%;border-radius:4px;background:${color};transition:width 0.5s ease;"></div>
+            </div>
+          </div>
+          <span style="font-size:12px;font-weight:600;color:var(--text-2);text-align:right;font-family:var(--font-mono);">${fmt$(cat.amount)}</span>
+        </div>
+      `;
+    }).join('');
+
     bars.innerHTML = `
       ${row('↑ Ingresos mensuales', income, 100, '#2E7D5E')}
       ${row('↓ Gastos mensuales',   expense, income > 0 ? (expense / income) * 100 : 0, '#D96E32')}
+      ${cats.length > 0 ? `
+        <div style="border-left:2px solid rgba(217,110,50,0.2);padding-left:12px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:600;color:var(--text-4);letter-spacing:0.06em;text-transform:uppercase;">Desglose</span>
+            <button id="btn-add-expense-cat" class="btn btn-glass btn-sm" style="font-size:10px;padding:3px 10px;">+ Categoría</button>
+          </div>
+          ${catRows}
+        </div>
+      ` : `
+        <div style="text-align:center;padding:var(--sp-2) 0;">
+          <button id="btn-add-expense-cat" class="btn btn-glass btn-sm" style="font-size:11px;">+ Agregar categorías de gasto</button>
+        </div>
+      `}
       <div style="border-top:0.5px solid rgba(20,16,10,0.07);padding-top:var(--sp-3);">
         ${row('= Ahorro neto', net, income > 0 ? Math.max(net / income * 100, 0) : 0, '#C8A84B', true)}
       </div>
     `;
+
+    document.getElementById('btn-add-expense-cat')?.addEventListener('click', openAddExpenseCat);
+    bars.querySelectorAll('.expense-cat-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const cat = cats.find(c => c.id === row.dataset.catId);
+        if (cat) openEditExpenseCat(cat);
+      });
+    });
+  }
+
+  function openAddExpenseCat() {
+    Modal.open({
+      title: 'Nueva categoría',
+      body: `
+        <div class="flex flex-col gap-3">
+          <div class="g2" style="gap:var(--sp-3);">
+            <div style="flex:0 0 72px;">
+              <label class="form-label">Emoji</label>
+              <input id="m-ec-emoji" class="input-glass w-full" value="💰" style="text-align:center;font-size:20px;" maxlength="2" />
+            </div>
+            <div style="flex:1;">
+              <label class="form-label">Nombre</label>
+              <input id="m-ec-name" class="input-glass w-full" placeholder="ej. Vivienda, Comida…" />
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Monto mensual (USD)</label>
+            <input id="m-ec-amount" class="input-glass w-full" type="number" min="0" step="10" value="0" />
+          </div>
+        </div>
+      `,
+      confirmLabel: '+ Agregar',
+      onConfirm: () => {
+        const name = document.getElementById('m-ec-name')?.value?.trim();
+        if (!name) { Toast.show('Escribe el nombre', 'warning'); return false; }
+        Store.update('wealthos', d => {
+          if (!d.expenseCategories) d.expenseCategories = [];
+          d.expenseCategories.push({
+            id:     Store.uid(),
+            name,
+            emoji:  document.getElementById('m-ec-emoji')?.value?.trim() || '💰',
+            amount: parseFloat(document.getElementById('m-ec-amount')?.value || 0),
+          });
+          return d;
+        });
+        refreshWealth();
+        Toast.show('Categoría agregada ✓');
+      }
+    });
+  }
+
+  function openEditExpenseCat(cat) {
+    Modal.open({
+      title: 'Editar categoría',
+      body: `
+        <div class="flex flex-col gap-3">
+          <div class="g2" style="gap:var(--sp-3);">
+            <div style="flex:0 0 72px;">
+              <label class="form-label">Emoji</label>
+              <input id="m-ec-emoji" class="input-glass w-full" value="${cat.emoji || '💰'}" style="text-align:center;font-size:20px;" maxlength="2" />
+            </div>
+            <div style="flex:1;">
+              <label class="form-label">Nombre</label>
+              <input id="m-ec-name" class="input-glass w-full" value="${cat.name}" />
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Monto mensual (USD)</label>
+            <input id="m-ec-amount" class="input-glass w-full" type="number" min="0" step="10" value="${cat.amount}" />
+          </div>
+          <button id="m-ec-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar categoría</button>
+        </div>
+      `,
+      confirmLabel: 'Guardar',
+      onConfirm: () => {
+        const name = document.getElementById('m-ec-name')?.value?.trim();
+        if (!name) { Toast.show('Escribe el nombre', 'warning'); return false; }
+        Store.update('wealthos', d => {
+          const c = (d.expenseCategories || []).find(x => x.id === cat.id);
+          if (c) {
+            c.name   = name;
+            c.emoji  = document.getElementById('m-ec-emoji')?.value?.trim() || cat.emoji;
+            c.amount = parseFloat(document.getElementById('m-ec-amount')?.value || cat.amount);
+          }
+          return d;
+        });
+        refreshWealth();
+        Toast.show('Categoría actualizada ✓');
+      }
+    });
+
+    setTimeout(() => {
+      document.getElementById('m-ec-delete')?.addEventListener('click', () => {
+        Modal.title.textContent = 'Eliminar categoría';
+        Modal.body.innerHTML = `<p style="color:var(--text-2);">¿Eliminar <strong>${cat.name}</strong>?</p>`;
+        Modal.onConfirm = () => {
+          Store.update('wealthos', d => { d.expenseCategories = (d.expenseCategories||[]).filter(c => c.id !== cat.id); return d; });
+          refreshWealth();
+          Toast.show('Categoría eliminada', 'info');
+        };
+        const btn = Modal.footer.querySelector('.modal-confirm');
+        if (btn) { btn.textContent = 'Eliminar'; btn.className = 'btn btn-danger btn-sm modal-confirm'; }
+      });
+    }, 50);
   }
 
   function openEditKPI(field) {
-    const data   = Store.load('wealthos');
+    const data = Store.load('wealthos');
+    if (field === 'monthly-expense' && (data.expenseCategories || []).length > 0) {
+      openAddExpenseCat(); return;
+    }
     const labels = { 'monthly-income': 'Ingresos mensuales (USD)', 'monthly-expense': 'Gastos mensuales (USD)' };
     const keys   = { 'monthly-income': 'monthlyIncome', 'monthly-expense': 'monthlyExpense' };
     const key    = keys[field];
-
     Modal.open({
       title: `Editar: ${labels[field]}`,
       body: `
@@ -1806,17 +2063,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
       document.getElementById('m-ea-delete')?.addEventListener('click', () => {
-        Modal.open({
-          title: 'Eliminar activo',
-          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${asset.name}</strong>? Esta acción no se puede deshacer.</p>`,
-          confirmLabel: 'Eliminar',
-          confirmClass: 'btn-danger',
-          onConfirm: () => {
-            Store.update('wealthos', d => { d.assets = d.assets.filter(a => a.id !== asset.id); return d; });
-            refreshWealth();
-            Toast.show('Activo eliminado', 'info');
-          }
-        });
+        Modal.title.textContent = 'Eliminar activo';
+        Modal.body.innerHTML = `<p style="color:var(--text-2);">¿Eliminar <strong>${asset.name}</strong>? Esta acción no se puede deshacer.</p>`;
+        Modal.onConfirm = () => {
+          Store.update('wealthos', d => { d.assets = d.assets.filter(a => a.id !== asset.id); return d; });
+          refreshWealth();
+          Toast.show('Activo eliminado', 'info');
+        };
+        const btn = Modal.footer.querySelector('.modal-confirm');
+        if (btn) { btn.textContent = 'Eliminar'; btn.className = 'btn btn-danger btn-sm modal-confirm'; }
       });
     }, 50);
   }
@@ -1832,28 +2087,67 @@ document.addEventListener('DOMContentLoaded', () => {
     neutral: { fill:'prog-neutral', badge:'badge-neutral', dot:'var(--text-4)',   text:'var(--text-3)'    },
   };
 
+  let _sprintProjectFilter = null;
+  let _openTaskModal       = null; // set by initProjectos
+
   function refreshProjectos() {
+    renderProjectFilter();
     renderSprintKanban();
     renderProjects();
-    renderMilestones();
+    renderRoadmap();
     renderProjectKPIs();
   }
 
   function initProjectos() {
     refreshProjectos();
 
-    const openTaskModal = () => {
+    /* openTaskModal(forcedProjectId)
+       - Si forcedProjectId está definido → la tarea ya tiene proyecto fijo (badge, no dropdown)
+       - Si null → dropdown con todos los proyectos para elegir */
+    const openTaskModal = (forcedProjectId = null) => {
+      const _d    = Store.load('projectos');
+      const projs = _d.projects || [];
+
+      // Proyecto efectivo: forzado por botón contextual, o filtro activo, o null
+      const effectiveId   = forcedProjectId ?? _sprintProjectFilter ?? null;
+      const effectiveProj = effectiveId ? projs.find(p => p.id === effectiveId) : null;
+
+      let projField = '';
+      if (effectiveProj) {
+        // Proyecto ya decidido → badge visual + hidden input
+        const c = PROJ_COLORS[effectiveProj.color] || PROJ_COLORS.gold;
+        projField = `
+          <div>
+            <label class="form-label">Proyecto</label>
+            <div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:8px;background:${c.dot}15;border:1px solid ${c.dot}40;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${c.dot};flex-shrink:0;"></span>
+              <span style="font-size:13px;font-weight:500;color:${c.text};">${effectiveProj.name}</span>
+            </div>
+            <input type="hidden" id="m-pt-project" value="${effectiveProj.id}" />
+          </div>`;
+      } else if (projs.length) {
+        // Sin filtro → dropdown explícito, sin pre-selección
+        projField = `
+          <div>
+            <label class="form-label">Proyecto <span style="color:var(--text-4);font-weight:400;">(opcional)</span></label>
+            <select id="m-pt-project" class="input-glass w-full">
+              <option value="" selected>Sin proyecto</option>
+              ${projs.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+            </select>
+          </div>`;
+      }
+
       Modal.open({
-        title: 'Nueva tarea',
+        title: effectiveProj ? `Nueva tarea · ${effectiveProj.name}` : 'Nueva tarea',
         body: `
           <div class="flex flex-col gap-3">
             <div>
               <label class="form-label">Título</label>
-              <input id="m-pt-title" class="input-glass w-full" type="text" placeholder="¿Qué hay que hacer?" />
+              <input id="m-pt-title" class="input-glass w-full" type="text" placeholder="¿Qué hay que hacer?" autofocus />
             </div>
             <div>
               <label class="form-label">Notas <span style="color:var(--text-4);font-weight:400;">(opcional)</span></label>
-              <textarea id="m-pt-notes" class="input-glass textarea-glass w-full" placeholder="Contexto, links, detalles…" style="min-height:64px;"></textarea>
+              <textarea id="m-pt-notes" class="input-glass textarea-glass w-full" placeholder="Contexto, links, detalles…" style="min-height:56px;"></textarea>
             </div>
             <div class="g2" style="gap:var(--sp-3);">
               <div>
@@ -1876,20 +2170,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 </select>
               </div>
             </div>
+            ${projField}
           </div>
         `,
         confirmLabel: '+ Agregar tarea',
         onConfirm: () => {
           const title = document.getElementById('m-pt-title')?.value?.trim();
           if (!title) { Toast.show('Escribe el título', 'warning'); return false; }
+          const rawPid  = document.getElementById('m-pt-project')?.value;
+          const projId  = rawPid && rawPid !== '' ? rawPid : null;
           Store.update('projectos', d => {
             d.tasks.backlog.unshift({
-              id:       Store.uid(),
+              id:        Store.uid(),
               title,
-              notes:    document.getElementById('m-pt-notes')?.value?.trim() || '',
-              points:   parseInt(document.getElementById('m-pt-points')?.value || 3, 10),
-              badge:    document.getElementById('m-pt-badge')?.value || 'neutral',
-              progress: 0,
+              notes:     document.getElementById('m-pt-notes')?.value?.trim() || '',
+              points:    parseInt(document.getElementById('m-pt-points')?.value || 3, 10),
+              badge:     document.getElementById('m-pt-badge')?.value || 'neutral',
+              projectId: projId,
+              progress:  0,
               createdAt: Date.now()
             });
             return d;
@@ -1900,7 +2198,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     };
 
-    document.getElementById('btn-add-sprint-task')?.addEventListener('click', openTaskModal);
+    _openTaskModal = openTaskModal; // expose to module scope for renderProjectFilter
+    document.getElementById('btn-add-sprint-task')?.addEventListener('click', () => openTaskModal());
 
     document.getElementById('btn-add-project')?.addEventListener('click', () => {
       Modal.open({
@@ -1967,6 +2266,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('btn-add-milestone')?.addEventListener('click', () => {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const nextMonthStr = new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().slice(0, 10);
       Modal.open({
         title: 'Nuevo hito',
         body: `
@@ -1981,9 +2282,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="g2" style="gap:var(--sp-3);">
               <div>
-                <label class="form-label">Período</label>
-                <input id="m-ms-period" class="input-glass w-full" type="text" placeholder="ej. Q2 2026" />
+                <label class="form-label">Inicio</label>
+                <input id="m-ms-start" type="date" class="input-glass w-full" value="${todayStr}" />
               </div>
+              <div>
+                <label class="form-label">Fin</label>
+                <input id="m-ms-end" type="date" class="input-glass w-full" value="${nextMonthStr}" />
+              </div>
+            </div>
+            <div class="g2" style="gap:var(--sp-3);">
               <div>
                 <label class="form-label">Estado</label>
                 <select id="m-ms-status" class="input-glass w-full">
@@ -1992,12 +2299,12 @@ document.addEventListener('DOMContentLoaded', () => {
                   <option value="done">Completado</option>
                 </select>
               </div>
-            </div>
-            <div>
-              <label class="form-label">Progreso: <span id="m-ms-prog-label">0%</span></label>
-              <input id="m-ms-progress" type="range" min="0" max="100" value="0"
-                     style="width:100%;accent-color:var(--gold);"
-                     oninput="document.getElementById('m-ms-prog-label').textContent=this.value+'%'" />
+              <div>
+                <label class="form-label">Progreso: <span id="m-ms-prog-label">0%</span></label>
+                <input id="m-ms-progress" type="range" min="0" max="100" value="0"
+                       style="width:100%;accent-color:var(--gold);"
+                       oninput="document.getElementById('m-ms-prog-label').textContent=this.value+'%'" />
+              </div>
             </div>
           </div>
         `,
@@ -2011,13 +2318,14 @@ document.addEventListener('DOMContentLoaded', () => {
               id:          Store.uid(),
               title,
               description: document.getElementById('m-ms-desc')?.value?.trim() || '',
-              period:      document.getElementById('m-ms-period')?.value?.trim() || '',
+              startDate:   document.getElementById('m-ms-start')?.value || null,
+              endDate:     document.getElementById('m-ms-end')?.value   || null,
               status:      document.getElementById('m-ms-status')?.value || 'planned',
               progress:    parseInt(document.getElementById('m-ms-progress')?.value || 0, 10),
             });
             return d;
           });
-          renderMilestones();
+          renderRoadmap();
           Toast.show('Hito agregado ✓');
         }
       });
@@ -2048,6 +2356,54 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sub) sub.textContent = `${projs} proyecto${projs !== 1 ? 's' : ''} activo${projs !== 1 ? 's' : ''} · ${total} tareas en sprint`;
   }
 
+  function renderProjectFilter() {
+    const container = document.getElementById('sprint-project-filter');
+    if (!container) return;
+    const data     = Store.load('projectos');
+    const projects = data.projects || [];
+
+    if (!projects.length) { container.style.display = 'none'; return; }
+
+    const activeProj = _sprintProjectFilter
+      ? projects.find(p => p.id === _sprintProjectFilter)
+      : null;
+    const ac = activeProj ? (PROJ_COLORS[activeProj.color] || PROJ_COLORS.gold) : null;
+
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.innerHTML = `
+      <button class="proj-pill ${_sprintProjectFilter === null ? 'proj-pill-active' : ''}" data-pid="all">Todos</button>
+      ${projects.map(p => {
+        const c      = PROJ_COLORS[p.color] || PROJ_COLORS.gold;
+        const active = _sprintProjectFilter === p.id;
+        return `<button class="proj-pill ${active ? 'proj-pill-active' : ''}" data-pid="${p.id}"
+          style="${active ? `background:${c.dot}1A;border-color:${c.dot}55;color:${c.text};` : ''}">
+          <span style="width:6px;height:6px;border-radius:50%;background:${c.dot};display:inline-block;flex-shrink:0;"></span>
+          ${p.name}
+        </button>`;
+      }).join('')}
+      ${activeProj ? `
+        <div style="width:1px;height:18px;background:rgba(0,0,0,0.08);margin:0 4px;flex-shrink:0;"></div>
+        <button id="btn-ctx-add-task" class="btn btn-primary btn-sm" style="font-size:11px;padding:4px 12px;white-space:nowrap;">
+          + Tarea en <strong style="font-weight:700;">${activeProj.name}</strong>
+        </button>
+      ` : ''}
+    `;
+
+    container.querySelectorAll('.proj-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _sprintProjectFilter = btn.dataset.pid === 'all' ? null : btn.dataset.pid;
+        renderProjectFilter();
+        renderSprintKanban();
+      });
+    });
+
+    // Contextual add-task button — passes the project id directly
+    container.querySelector('#btn-ctx-add-task')?.addEventListener('click', () => {
+      if (_openTaskModal) _openTaskModal(_sprintProjectFilter);
+    });
+  }
+
   function renderProjects() {
     const grid = document.getElementById('projects-grid');
     if (!grid) return;
@@ -2063,11 +2419,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const STATUS_LABEL = { active:'Activo', paused:'Pausado', done:'Completado' };
     const STATUS_BADGE = { active:'badge-gold', paused:'badge-neutral', done:'badge-emerald' };
 
+    const allTasks = [...(data.tasks?.backlog||[]), ...(data.tasks?.doing||[]), ...(data.tasks?.done||[])];
+
     projects.forEach(proj => {
       const c = PROJ_COLORS[proj.color] || PROJ_COLORS.gold;
+      const projTasks = allTasks.filter(t => t.projectId === proj.id);
+      const taskDone  = projTasks.filter(t => allTasks.filter(x => x.id === t.id && data.tasks.done.includes(t)).length || data.tasks.done.some(x => x.id === t.id)).length;
+      const taskCount = projTasks.length;
+      const isSelected = _sprintProjectFilter === proj.id;
       const div = document.createElement('div');
       div.className = 'card card-interactive card-in';
       div.style.cursor = 'pointer';
+      if (isSelected) div.style.outline = `2px solid ${c.dot}`;
       div.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--sp-3);">
           <div style="min-width:0;">
@@ -2079,7 +2442,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="prog-track" style="height:4px;margin-bottom:5px;">
           <div class="prog-fill ${c.fill}" style="width:${proj.progress}%;"></div>
         </div>
-        <p style="font-size:10px;color:${c.text};text-align:right;">${proj.progress}% completado</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:var(--text-4);">${taskCount > 0 ? taskCount + ' tarea' + (taskCount!==1?'s':'') + ' en sprint' : 'Sin tareas asignadas'}</span>
+          <p style="font-size:10px;color:${c.text};">${proj.progress}% completado</p>
+        </div>
       `;
       div.addEventListener('click', () => openEditProject(proj));
       grid.appendChild(div);
@@ -2153,17 +2519,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
       document.getElementById('m-ep-delete')?.addEventListener('click', () => {
-        Modal.open({
-          title: 'Eliminar proyecto',
-          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${proj.name}</strong>? No se puede deshacer.</p>`,
-          confirmLabel: 'Eliminar',
-          confirmClass: 'btn-danger',
-          onConfirm: () => {
-            Store.update('projectos', d => { d.projects = (d.projects || []).filter(p => p.id !== proj.id); return d; });
-            refreshProjectos();
-            Toast.show('Proyecto eliminado', 'info');
-          }
-        });
+        Modal.title.textContent = 'Eliminar proyecto';
+        Modal.body.innerHTML = `<p style="color:var(--text-2);">¿Eliminar <strong>${proj.name}</strong>? No se puede deshacer.</p>`;
+        Modal.onConfirm = () => {
+          Store.update('projectos', d => { d.projects = (d.projects || []).filter(p => p.id !== proj.id); return d; });
+          refreshProjectos();
+          Toast.show('Proyecto eliminado', 'info');
+        };
+        const btn = Modal.footer.querySelector('.modal-confirm');
+        if (btn) { btn.textContent = 'Eliminar'; btn.className = 'btn btn-danger btn-sm modal-confirm'; }
       });
     }, 50);
   }
@@ -2179,17 +2543,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const el  = document.getElementById(`sprint-${col}`);
       const cnt = document.querySelector(`[data-sprint-count="${col}"]`);
       if (!el) return;
-      if (cnt) cnt.textContent = data.tasks[col].length;
+      const colTasks = _sprintProjectFilter
+        ? data.tasks[col].filter(t => t.projectId === _sprintProjectFilter)
+        : data.tasks[col];
+      if (cnt) cnt.textContent = colTasks.length;
       el.innerHTML = '';
 
-      if (!data.tasks[col].length) {
+      if (!colTasks.length) {
         el.innerHTML = `<p style="text-align:center;color:var(--text-4);font-size:10px;padding:var(--sp-4) 0;">Vacío</p>`;
-        return;
       }
 
-      data.tasks[col].forEach(task => {
+      // Drop zone on column
+      el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+      el.addEventListener('dragleave', e => { if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over'); });
+      el.addEventListener('drop', e => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        try {
+          const { id, fromCol } = JSON.parse(e.dataTransfer.getData('text/plain'));
+          if (fromCol === col) return;
+          Store.update('projectos', d => {
+            const srcIdx = d.tasks[fromCol].findIndex(t => t.id === id);
+            if (srcIdx < 0) return d;
+            const [t] = d.tasks[fromCol].splice(srcIdx, 1);
+            if (col === 'done') t.progress = 100;
+            d.tasks[col].unshift(t);
+            return d;
+          });
+          refreshProjectos();
+          Toast.show(`→ ${LABELS[col]}`);
+        } catch {}
+      });
+
+      if (!colTasks.length) return;
+
+      colTasks.forEach(task => {
         const card = document.createElement('div');
         card.className = 'kanban-card card-in';
+        card.draggable = true;
         const prog = task.progress ?? (col === 'done' ? 100 : 0);
         const isDone = col === 'done';
         const c = PROJ_COLORS[task.badge] || PROJ_COLORS.neutral;
@@ -2206,6 +2597,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           ${col==='doing' ? `<input type="range" class="kc-progress-input" min="0" max="100" value="${prog}" style="width:100%;margin-top:8px;accent-color:var(--gold);cursor:pointer;" />` : ''}
         `;
+
+        // Drag events
+        card.addEventListener('dragstart', e => {
+          card.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', JSON.stringify({ id: task.id, fromCol: col }));
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
 
         card.querySelector('.kc-move')?.addEventListener('click', e => {
           e.stopPropagation();
@@ -2248,6 +2647,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function openEditTask(task, col) {
+    const _d = Store.load('projectos');
+    const _projs = _d.projects || [];
+    const projOpts = _projs.length
+      ? `<div>
+          <label class="form-label">Proyecto</label>
+          <select id="m-et-project" class="input-glass w-full">
+            <option value="">Sin proyecto</option>
+            ${_projs.map(p => `<option value="${p.id}" ${task.projectId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+          </select>
+         </div>`
+      : '';
     Modal.open({
       title: 'Editar tarea',
       body: `
@@ -2276,6 +2686,7 @@ document.addEventListener('DOMContentLoaded', () => {
               </select>
             </div>
           </div>
+          ${projOpts}
           <button id="m-et-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar tarea</button>
         </div>
       `,
@@ -2286,10 +2697,12 @@ document.addEventListener('DOMContentLoaded', () => {
         Store.update('projectos', d => {
           const t = d.tasks[col].find(x => x.id === task.id);
           if (t) {
-            t.title  = title;
-            t.notes  = document.getElementById('m-et-notes')?.value?.trim() || '';
-            t.points = parseInt(document.getElementById('m-et-points')?.value || task.points, 10);
-            t.badge  = document.getElementById('m-et-badge')?.value || task.badge;
+            t.title     = title;
+            t.notes     = document.getElementById('m-et-notes')?.value?.trim() || '';
+            t.points    = parseInt(document.getElementById('m-et-points')?.value || task.points, 10);
+            t.badge     = document.getElementById('m-et-badge')?.value || task.badge;
+            const _raw = document.getElementById('m-et-project')?.value;
+            t.projectId = (_raw && _raw !== '') ? _raw : null;
           }
           return d;
         });
@@ -2300,74 +2713,138 @@ document.addEventListener('DOMContentLoaded', () => {
 
     setTimeout(() => {
       document.getElementById('m-et-delete')?.addEventListener('click', () => {
-        Modal.open({
-          title: 'Eliminar tarea',
-          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${task.title}</strong>?</p>`,
-          confirmLabel: 'Eliminar',
-          confirmClass: 'btn-danger',
-          onConfirm: () => {
-            Store.update('projectos', d => { d.tasks[col] = d.tasks[col].filter(t => t.id !== task.id); return d; });
-            refreshProjectos();
-            Toast.show('Tarea eliminada', 'info');
-          }
-        });
+        Modal.title.textContent = 'Eliminar tarea';
+        Modal.body.innerHTML = `<p style="color:var(--text-2);">¿Eliminar <strong>${task.title}</strong>? No se puede deshacer.</p>`;
+        Modal.onConfirm = () => {
+          Store.update('projectos', d => { d.tasks[col] = d.tasks[col].filter(t => t.id !== task.id); return d; });
+          refreshProjectos();
+          Toast.show('Tarea eliminada', 'info');
+        };
+        const btn = Modal.footer.querySelector('.modal-confirm');
+        if (btn) { btn.textContent = 'Eliminar'; btn.className = 'btn btn-danger btn-sm modal-confirm'; }
       });
     }, 50);
   }
 
-  function renderMilestones() {
-    const list = document.getElementById('milestones-list');
-    if (!list) return;
-    const data       = Store.load('projectos');
+  function renderRoadmap() {
+    const container = document.getElementById('milestones-list');
+    if (!container) return;
+    const data = Store.load('projectos');
     const milestones = data.milestones || [];
-    list.innerHTML   = '';
 
     if (!milestones.length) {
-      list.innerHTML = `<p style="color:var(--text-4);font-size:var(--text-sm);padding:var(--sp-2) 0;">Sin hitos todavía. Agrega el primero →</p>`;
+      container.innerHTML = `<p style="color:var(--text-4);font-size:var(--text-sm);padding:var(--sp-2) 0;">Sin hitos todavía. Agrega el primero →</p>`;
       return;
     }
 
-    const STATUS = {
-      done:    { badge:'badge-emerald', label:'✓ Completado', color:'var(--emerald-2)', dot:'background:var(--emerald-2);box-shadow:0 0 0 3px rgba(46,125,94,0.18);', fill:'prog-emerald' },
-      active:  { badge:'badge-gold',    label:'En curso',     color:'var(--gold-3)',    dot:'background:var(--gold);box-shadow:0 0 0 3px rgba(200,168,75,0.22);animation:gold-pulse 2.5s ease-in-out infinite;', fill:'prog-gold' },
-      planned: { badge:'badge-sky',     label:'Planificado',  color:'var(--sky)',       dot:'background:rgba(52,112,184,0.25);border:1.5px solid var(--sky-2);', fill:'prog-sky' },
+    const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const today = new Date();
+
+    const STATUS_CFG = {
+      done:    { label:'✓ Completado', dot:'#2E7D5E', fill:'rgba(46,125,94,0.18)',   border:'rgba(46,125,94,0.55)',   text:'#2E7D5E' },
+      active:  { label:'◉ En curso',   dot:'#C8A84B', fill:'rgba(200,168,75,0.18)',  border:'rgba(200,168,75,0.55)',  text:'#B8962E' },
+      planned: { label:'○ Planificado', dot:'#3470B8', fill:'rgba(52,112,184,0.13)', border:'rgba(52,112,184,0.40)',  text:'#3470B8' },
     };
 
-    milestones.forEach((ms, i) => {
-      const s    = STATUS[ms.status] || STATUS.planned;
-      const last = i === milestones.length - 1;
-      const div  = document.createElement('div');
-      div.className = 'timeline-item';
-      div.innerHTML = `
-        <div class="timeline-stem">
-          <div class="timeline-dot" style="${s.dot}"></div>
-          ${!last ? '<div class="timeline-line"></div>' : ''}
-        </div>
-        <div class="timeline-body" style="cursor:pointer;">
-          <div class="flex justify-between items-start" style="margin-bottom:6px;">
-            <div>
-              <p style="font-size:var(--text-sm);font-weight:600;color:${s.color};">${ms.title}</p>
-              ${ms.period ? `<p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">${ms.period}</p>` : ''}
+    // Parse dates: fall back to current month span if missing
+    const parsed = milestones.map(ms => {
+      const s = ms.startDate ? new Date(ms.startDate + 'T00:00:00') : new Date(today.getFullYear(), today.getMonth(), 1);
+      const e = ms.endDate   ? new Date(ms.endDate   + 'T00:00:00') : new Date(s.getFullYear(), s.getMonth() + 1, 0);
+      return { ...ms, _s: s, _e: e };
+    });
+
+    // Build view window: 1 month before today → enough to fit all milestones, min 10 months
+    let vStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    let vEnd   = new Date(today.getFullYear(), today.getMonth() + 9, 0);
+    parsed.forEach(ms => {
+      if (ms._s < vStart) vStart = new Date(ms._s.getFullYear(), ms._s.getMonth(), 1);
+      if (ms._e > vEnd)   vEnd   = new Date(ms._e.getFullYear(), ms._e.getMonth() + 1, 0);
+    });
+
+    const totalRange = vEnd - vStart;
+    const todayPct   = Math.min(100, Math.max(0, (today - vStart) / totalRange * 100));
+
+    // Generate month columns
+    const months = [];
+    const cur = new Date(vStart.getFullYear(), vStart.getMonth(), 1);
+    while (cur <= vEnd) { months.push(new Date(cur)); cur.setMonth(cur.getMonth() + 1); }
+
+    // Month grid lines HTML (reused per row)
+    const gridLines = months.map(m => {
+      const lp = ((m - vStart) / totalRange * 100).toFixed(2);
+      return `<div style="position:absolute;left:${lp}%;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.05);pointer-events:none;"></div>`;
+    }).join('');
+
+    // Month header
+    const monthHeader = months.map(m => {
+      const lp = ((m - vStart) / totalRange * 100).toFixed(2);
+      const isCurrentMonth = m.getMonth() === today.getMonth() && m.getFullYear() === today.getFullYear();
+      return `<div style="position:absolute;left:${lp}%;font-size:9px;color:${isCurrentMonth ? 'var(--gold-3)' : 'var(--text-4)'};font-family:var(--font-mono);font-weight:${isCurrentMonth ? '700' : '400'};white-space:nowrap;transform:translateX(3px);">
+        ${MONTH_NAMES[m.getMonth()]} '${String(m.getFullYear()).slice(2)}
+      </div>`;
+    }).join('');
+
+    // Milestone bars
+    const rows = parsed.map(ms => {
+      const s = STATUS_CFG[ms.status] || STATUS_CFG.planned;
+      const leftPct  = Math.max(0,   (ms._s - vStart) / totalRange * 100);
+      const rightPct = Math.min(100, (ms._e - vStart) / totalRange * 100);
+      const widthPct = Math.max(1.5, rightPct - leftPct);
+      const fmtDate  = d => `${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+
+      return `
+        <div class="gantt-row" data-ms-id="${ms.id}" style="display:grid;grid-template-columns:150px 1fr;gap:0;align-items:center;padding:3px 0;cursor:pointer;">
+          <div style="padding-right:12px;text-align:right;overflow:hidden;">
+            <p style="font-size:11px;font-weight:600;color:${s.text};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;">${ms.title}</p>
+            <p style="font-size:9px;color:var(--text-5);font-family:var(--font-mono);margin-top:1px;">${s.label}</p>
+          </div>
+          <div style="position:relative;height:32px;">
+            ${gridLines}
+            <!-- Today line -->
+            <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:0;bottom:0;width:1.5px;background:var(--gold);opacity:0.5;pointer-events:none;z-index:3;"></div>
+            <!-- Bar -->
+            <div class="gantt-bar" style="left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%;background:${s.fill};border:1px solid ${s.border};" title="${ms.title} · ${fmtDate(ms._s)} → ${fmtDate(ms._e)}">
+              <!-- Progress fill -->
+              <div style="position:absolute;left:0;top:0;bottom:0;width:${ms.progress}%;background:${s.border};opacity:0.55;border-radius:4px 0 0 4px;pointer-events:none;"></div>
+              <span style="position:relative;font-size:9px;color:${s.text};font-weight:700;font-family:var(--font-mono);padding:0 7px;white-space:nowrap;line-height:22px;">${ms.progress > 8 ? ms.progress+'%' : ''}</span>
             </div>
-            <span class="badge ${s.badge}">${s.label}</span>
           </div>
-          <div class="prog-track" style="margin-bottom:6px;">
-            <div class="prog-fill ${s.fill}" style="width:${ms.progress}%;"></div>
-          </div>
-          ${ms.description ? `<p style="font-size:var(--text-xs);color:var(--text-3);">${ms.description}</p>` : ''}
         </div>
       `;
-      div.querySelector('.timeline-body')?.addEventListener('click', () => openEditMilestone(ms));
-      list.appendChild(div);
+    }).join('');
+
+    container.innerHTML = `
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <div style="min-width:560px;">
+          <!-- Month header -->
+          <div style="display:grid;grid-template-columns:150px 1fr;margin-bottom:10px;">
+            <div></div>
+            <div style="position:relative;height:20px;border-bottom:1px solid rgba(0,0,0,0.07);margin-bottom:4px;">
+              ${monthHeader}
+              <!-- Today label -->
+              <div style="position:absolute;left:${todayPct.toFixed(2)}%;top:2px;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;font-family:var(--font-mono);letter-spacing:0.04em;white-space:nowrap;">HOY</div>
+            </div>
+          </div>
+          <!-- Legend -->
+          <div style="display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+            ${Object.entries(STATUS_CFG).map(([k,v]) => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--text-3);"><span style="width:10px;height:10px;border-radius:2px;background:${v.fill};border:1px solid ${v.border};display:inline-block;"></span>${v.label.replace(/[✓◉○] /,'')}</span>`).join('')}
+          </div>
+          <!-- Rows -->
+          ${rows}
+        </div>
+      </div>
+    `;
+
+    // Click handlers
+    container.querySelectorAll('.gantt-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const ms = milestones.find(m => m.id === row.dataset.msId);
+        if (ms) openEditMilestone(ms);
+      });
     });
   }
 
   function openEditMilestone(ms) {
-    const STATUS_OPTS = [
-      { v:'planned', l:'Planificado' },
-      { v:'active',  l:'En curso' },
-      { v:'done',    l:'Completado' },
-    ];
     Modal.open({
       title: 'Editar hito',
       body: `
@@ -2378,25 +2855,33 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div>
             <label class="form-label">Descripción</label>
-            <input id="m-ems-desc" class="input-glass w-full" value="${ms.description || ''}" />
+            <input id="m-ems-desc" class="input-glass w-full" value="${ms.description || ''}" placeholder="Qué incluye este hito…" />
           </div>
           <div class="g2" style="gap:var(--sp-3);">
             <div>
-              <label class="form-label">Período</label>
-              <input id="m-ems-period" class="input-glass w-full" value="${ms.period || ''}" placeholder="ej. Q3 2026" />
+              <label class="form-label">Inicio</label>
+              <input id="m-ems-start" type="date" class="input-glass w-full" value="${ms.startDate || ''}" />
             </div>
+            <div>
+              <label class="form-label">Fin</label>
+              <input id="m-ems-end" type="date" class="input-glass w-full" value="${ms.endDate || ''}" />
+            </div>
+          </div>
+          <div class="g2" style="gap:var(--sp-3);">
             <div>
               <label class="form-label">Estado</label>
               <select id="m-ems-status" class="input-glass w-full">
-                ${STATUS_OPTS.map(o => `<option value="${o.v}" ${o.v===ms.status?'selected':''}>${o.l}</option>`).join('')}
+                <option value="planned" ${ms.status==='planned'?'selected':''}>Planificado</option>
+                <option value="active"  ${ms.status==='active' ?'selected':''}>En curso</option>
+                <option value="done"    ${ms.status==='done'   ?'selected':''}>Completado</option>
               </select>
             </div>
-          </div>
-          <div>
-            <label class="form-label">Progreso: <span id="m-ems-prog-label">${ms.progress}%</span></label>
-            <input id="m-ems-progress" type="range" min="0" max="100" value="${ms.progress}"
-                   style="width:100%;accent-color:var(--gold);"
-                   oninput="document.getElementById('m-ems-prog-label').textContent=this.value+'%'" />
+            <div>
+              <label class="form-label">Progreso: <span id="m-ems-prog-label">${ms.progress}%</span></label>
+              <input id="m-ems-progress" type="range" min="0" max="100" value="${ms.progress}"
+                     style="width:100%;accent-color:var(--gold);"
+                     oninput="document.getElementById('m-ems-prog-label').textContent=this.value+'%'" />
+            </div>
           </div>
           <button id="m-ems-delete" class="btn btn-glass btn-sm" style="color:var(--sunset);margin-top:4px;">🗑 Eliminar hito</button>
         </div>
@@ -2409,31 +2894,30 @@ document.addEventListener('DOMContentLoaded', () => {
           const m = (d.milestones || []).find(x => x.id === ms.id);
           if (m) {
             m.title       = title;
-            m.description = document.getElementById('m-ems-desc')?.value?.trim()   || '';
-            m.period      = document.getElementById('m-ems-period')?.value?.trim() || '';
-            m.status      = document.getElementById('m-ems-status')?.value         || ms.status;
+            m.description = document.getElementById('m-ems-desc')?.value?.trim() || '';
+            m.startDate   = document.getElementById('m-ems-start')?.value || null;
+            m.endDate     = document.getElementById('m-ems-end')?.value   || null;
+            m.status      = document.getElementById('m-ems-status')?.value || ms.status;
             m.progress    = parseInt(document.getElementById('m-ems-progress')?.value || ms.progress, 10);
           }
           return d;
         });
-        renderMilestones();
+        renderRoadmap();
         Toast.show('Hito actualizado ✓');
       }
     });
 
     setTimeout(() => {
       document.getElementById('m-ems-delete')?.addEventListener('click', () => {
-        Modal.open({
-          title: 'Eliminar hito',
-          body: `<p style="color:var(--text-2);">¿Eliminar <strong>${ms.title}</strong>?</p>`,
-          confirmLabel: 'Eliminar',
-          confirmClass: 'btn-danger',
-          onConfirm: () => {
-            Store.update('projectos', d => { d.milestones = (d.milestones || []).filter(m => m.id !== ms.id); return d; });
-            renderMilestones();
-            Toast.show('Hito eliminado', 'info');
-          }
-        });
+        Modal.title.textContent = 'Eliminar hito';
+        Modal.body.innerHTML = `<p style="color:var(--text-2);">¿Eliminar <strong>${ms.title}</strong>? No se puede deshacer.</p>`;
+        Modal.onConfirm = () => {
+          Store.update('projectos', d => { d.milestones = (d.milestones || []).filter(m => m.id !== ms.id); return d; });
+          renderRoadmap();
+          Toast.show('Hito eliminado', 'info');
+        };
+        const btn = Modal.footer.querySelector('.modal-confirm');
+        if (btn) { btn.textContent = 'Eliminar'; btn.className = 'btn btn-danger btn-sm modal-confirm'; }
       });
     }, 50);
   }
@@ -3461,7 +3945,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (module === 'wealthos')    { refreshWealth(); }
     if (module === 'projectos')   { refreshProjectos(); }
     if (module === 'secondbrain') { renderBooks(); renderIdeas(); renderHabits(); updateBrainKPIs(); }
-    if (module === 'dayos')       { renderKanban(); renderPriorities(); renderWeekTabs(); renderAgendaBlocks(agendaSelectedDate); updateAllStats(); renderReflectionHistory(); updateGreeting(); }
+    if (module === 'dayos')       { renderKanban(); renderPriorities(); renderCalendar(); renderWeekTabs(); renderAgendaBlocks(agendaSelectedDate); updateAllStats(); renderReflectionHistory(); updateGreeting(); }
   });
 
   /* ════════════════════════════════════════════════════════

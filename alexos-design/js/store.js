@@ -46,7 +46,15 @@ const Store = (() => {
       ],
       monthlyIncome:  18500,
       monthlyExpense:  5900,
-      savingsRate:    68
+      savingsRate:    68,
+      expenseCategories: [
+        { id: 'ec1', name: 'Vivienda',        emoji: '🏠', amount: 1800 },
+        { id: 'ec2', name: 'Alimentación',    emoji: '🍽️', amount: 900  },
+        { id: 'ec3', name: 'Transporte',      emoji: '🚗', amount: 450  },
+        { id: 'ec4', name: 'Entretenimiento', emoji: '🎬', amount: 350  },
+        { id: 'ec5', name: 'Salud',           emoji: '💊', amount: 200  },
+        { id: 'ec6', name: 'Otros',           emoji: '📦', amount: 200  },
+      ]
     },
 
     projectos: {
